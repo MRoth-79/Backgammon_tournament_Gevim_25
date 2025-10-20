@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>מערכת ניהול טורניר שש-בש (הראשון ל-3)</title>
+<title>מערכת ניהול טורניר שש-בש (הראשון ל-3) ל-16 שחקנים</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 /* הגדרות גופן ורקע כללי - סכמה אנרגטית מעודכנת */
@@ -30,16 +30,33 @@ button:hover {
 .match-card {
     min-width: 220px; /* הגדלת רוחב קלפים */
     border: 3px solid #3b82f6; /* גבול כחול בולט למשחק */
-    margin-bottom: 16px;
+    margin-bottom: 16px; /* 16px = h-4 */
     border-radius: 16px;
     background: linear-gradient(145deg, #1e293b, #111827); /* רקע כהה עם עומק */
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
     padding: 0; /* ננהל את הריפוד בפנים */
+    /* גובה אחיד לכל כרטיס (כולל פדינג פנימי + בורדרים) כדי לאפשר חישובים מדויקים ב-JS */
+    height: 80px; /* גובה מותאם לשני ה-player-slot-ים */
 }
+.player-slot {
+    /* נגדיר גובה מדויק לכל סלוט */
+    height: 40px; 
+    padding: 6px 14px; /* הקטנת פדינג אנכי */
+    margin: 0; 
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+    font-size: 1rem; /* גודל פונט קטן יותר */
+    position: relative;
+    z-index: 10;
+}
+
 
 /* הגבהת הטורניר כדי לאפשר יישור אנכי של הגמר */
 #bracket {
-    min-height: 550px;
+    min-height: 800px;
 }
 
 /* סטיילינג לטורניר הנוקאאוט - הטור האמצעי מקבל קו הפרדה ברור */
@@ -60,20 +77,24 @@ button:hover {
     padding: 0 20px;
 }
 
-.player-slot {
-    padding: 10px 14px;
-    margin: 0; /* ללא מרווח פנימי בין השחקנים בכרטיס */
-    border-radius: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-weight: 700;
-    font-size: 1.1rem;
-    position: relative;
-    z-index: 10;
+/* עיצוב מיוחד לגמר - דגש על גדול יותר */
+.match-card.final-match {
+    border-width: 5px;
+    border-color: #FBBF24; /* זהב */
+    min-width: 280px;
+    /* ביטול סקייל דינמי כדי לשמור על יישור מדויק */
+    transform: none; 
+    box-shadow: 0 15px 30px rgba(245, 158, 11, 0.8);
+    height: 100px; /* גובה גדול יותר לגמר */
+}
+.match-card.final-match .player-slot {
+    height: 50px;
+    font-size: 1.25rem;
+    padding: 8px 16px;
 }
 
-/* מפריד ויזואלי בין השחקנים בכרטיס */
+
+/* עיצוב משופר ל-player-slot (כפי שהיה במקור) */
 .player-slot:first-child {
     border-bottom: 1px dashed #3b82f640;
     border-top-left-radius: 16px;
@@ -103,7 +124,7 @@ button:hover {
     background: linear-gradient(90deg, #FBBF24, #f59e0b); /* Gold to Darker Gold */
     color: #1f2937;
     font-weight: 900;
-    transform: scale(1.02);
+    transform: none; /* ביטול סקייל כדי לשמור על יישור */
     border: 3px solid #f59e0b;
 }
 .player-slot-loser {
@@ -132,11 +153,18 @@ button:hover {
     animation: pulse 1.5s infinite;
 }
 
+@keyframes pulse {
+    0% { transform: scale(1); box-shadow: 0 15px 30px rgba(245, 158, 11, 0.8); }
+    50% { transform: scale(1.03); box-shadow: 0 15px 40px rgba(245, 158, 11, 1); }
+    100% { transform: scale(1); box-shadow: 0 15px 30px rgba(245, 158, 11, 0.8); }
+}
+
 /* כפתורי המודאל */
 #btn-p1-win, #btn-p2-win {
     background: linear-gradient(90deg, #3b82f6, #06b6d4); /* Blue-Cyan Gradient */
     color: white;
 }
+
 </style>
 </head>
 <body class="rtl text-right">
@@ -144,13 +172,14 @@ button:hover {
 <!-- שינוי צבעי רקע וכותרות לאמבר ובולטות -->
 <div class="text-center py-6 bg-slate-900 rounded-b-3xl mb-8 shadow-2xl border-b-4 border-cyan-500">
     <h1 class="text-5xl font-black text-amber-400 tracking-wider">🏆 טיול גברים: טורניר שש-בש 🎲</h1>
-    <p class="text-xl text-cyan-300 mt-2 font-semibold">פורמט: **הראשון ל-3 ניצחונות משחק** (הטוב מ-5)</p>
+    <!-- עדכון ל-16 שחקנים -->
+    <p class="text-xl text-cyan-300 mt-2 font-semibold">פורמט: **הראשון ל-3 ניצחונות משחק** (טורניר 16 שחקנים)</p>
 </div>
 
 <!-- כפתורי בקרה -->
 <div class="flex justify-center mb-8 space-x-6 space-x-reverse">
     <!-- כפתור התחלה בטורקיז בולט -->
-    <button id="start-tournament" class="bg-teal-600 text-white px-8 py-4 rounded-xl font-extrabold text-xl hover:bg-teal-700 transition duration-150">🚀 התחל טורניר (צריך 8 שחקנים)</button>
+    <button id="start-tournament" class="bg-teal-600 text-white px-8 py-4 rounded-xl font-extrabold text-xl hover:bg-teal-700 transition duration-150">🚀 התחל טורניר (צריך 16 שחקנים)</button>
     
     <!-- כפתור איפוס בכתום חזק -->
     <button id="reset-tournament" onclick="window.resetTournament()" class="bg-orange-700 text-white px-8 py-4 rounded-xl font-extrabold text-xl hover:bg-red-800 transition duration-150">❌ אפס טורניר</button>
@@ -162,9 +191,10 @@ button:hover {
 
 <!-- טופס רישום שחקנים -->
 <div id="registration-section" class="bg-slate-800 p-8 rounded-3xl mb-8 shadow-2xl border border-cyan-500/50 max-w-4xl mx-auto">
+    <!-- עדכון ל-16 שחקנים -->
     <h2 class="text-3xl font-bold text-amber-300 mb-5 border-b border-amber-300/30 pb-3 flex items-center gap-3">
         <span class="text-4xl">👥</span>
-        רשימת הלוחמים (<span id="team-count">0</span>/8)
+        רשימת הלוחמים (<span id="team-count">0</span>/16)
     </h2>
     <form id="add-team-form" class="flex gap-4 mb-4">
         <input id="team-name" class="flex-grow p-4 bg-slate-700 border-2 border-cyan-400 rounded-xl text-white placeholder-gray-400 focus:ring-cyan-500 focus:border-cyan-500 text-right text-lg shadow-inner" placeholder="הכנס כינוי/שם מלך השש-בש..." required />
@@ -180,7 +210,7 @@ button:hover {
 
 <!-- תצוגת טורניר -->
 <div id="tournament-section" class="bg-slate-900 p-6 rounded-3xl shadow-2xl hidden border border-cyan-500/30">
-    <h2 class="text-4xl font-black text-amber-400 mb-8 text-center border-b border-amber-400/30 pb-4">⚔️ לוח הקרבות המרכזי - נוקאאוט ⚔️</h2>
+    <h2 class="text-4xl font-black text-amber-400 mb-8 text-center border-b border-amber-400/30 pb-4">⚔️ לוח הקרבות המרכזי - נוקאאוט 16 ⚔️</h2>
     <div id="bracket" class="flex justify-center overflow-x-auto p-4">
         <!-- מבנה הטורניר יוטען כאן -->
     </div>
@@ -231,20 +261,19 @@ button:hover {
 
 <script type="module">
 // --- הגדרות גלובליות ---
-// שם מפתח ה-localStorage לשמירת נתוני הטורניר
-const STORAGE_KEY = 'backgammon_tournament_data_v1';
+const STORAGE_KEY = 'backgammon_tournament_16_players_v2';
 const WINS_TO_WIN_MATCH = 3; // הראשון ל-3 ניצחונות משחק (הטוב מ-5)
+const MAX_PLAYERS = 16; // *** עדכון ל-16 שחקנים ***
+// גובה כרטיס משחק (80px) + מרווח תחתון (mb-4 = 16px).
+// זהו הגובה הלוגי של 'שורה אחת' בטורניר.
+const MATCH_HEIGHT_UNIT = 80 + 16; // 96px 
 
-// רשימת הכינויים המצחיקים
+// רשימת הכינויים המצחיקים (16 כניסות)
 const FUNNY_NICKNAMES = [
-    "הקוביה המשתוללת",
-    "המזלזל הנצחי",
-    "המנגליסט הראשי",
-    "טריק-שש-בש",
-    "השחקן הלילי",
-    "חסימת הצהריים",
-    "הדאבל של שישי",
-    "האלוף התורן"
+    "הקוביה המשתוללת", "המזלזל הנצחי", "המנגליסט הראשי", "טריק-שש-בש",
+    "השחקן הלילי", "חסימת הצהריים", "הדאבל של שישי", "האלוף התורן",
+    "הפורקן של מוצ'י", "נמר הטאבלה", "גנב הקוביות", "אלוף המינימום",
+    "שליח הגמלים", "המלך האשכנזי", "המגן הטורקי", "המעיף המקצועי"
 ];
 
 // --- DOM elements ---
@@ -262,17 +291,18 @@ const resultModal = document.getElementById('result-modal');
 const championModal = document.getElementById('modal-placeholder');
 const championCard = document.getElementById('champion-card');
 
-// הגדרה של מצב התחלתי
+// הגדרה של מצב התחלתי עם 4 סבבים לוגיים
 const initialTournamentData = {
-    teams: [],  
+    teams: [], 
     status: 'registration', // 'registration', 'in_progress', 'finished'
     matches: {
-        round1: [],
-        semifinals: [],
-        final: []
+        roundOf16: [], // שמינית גמר - 8 משחקים
+        quarterfinals: [], // רבע גמר - 4 משחקים
+        semifinals: [], // חצי גמר - 2 משחקים
+        final: [] // גמר - 1 משחק
     },
     winner: null,
-    showChampionModal: false  
+    showChampionModal: false 
 };
 
 let tournamentData = { ...initialTournamentData }; // שימוש באובייקט התחלתי
@@ -300,9 +330,6 @@ function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
 }
 
-/**
- * בוחר כינוי ייחודי פנוי מתוך רשימת הכינויים הקבועה.
- */
 function getAvailableNickname(currentTeams) {
     const usedNicknames = new Set(currentTeams.map(t => t.nickname).filter(n => n));
     const availableNicknames = FUNNY_NICKNAMES.filter(n => !usedNicknames.has(n));
@@ -333,15 +360,14 @@ function loadData() {
         if (storedData) {
             const parsedData = JSON.parse(storedData);
             if (parsedData && Array.isArray(parsedData.teams) && typeof parsedData.status === 'string') {
-                // בדיקה פשוטה לוודא שהמבנה לא השתנה דרמטית
                 tournamentData = { ...initialTournamentData, ...parsedData };
             } else {
                 console.warn("Local Storage: Stored data is corrupted or invalid. Starting fresh.");
                 localStorage.removeItem(STORAGE_KEY);
-                tournamentData = { ...initialTournamentData };  
+                tournamentData = { ...initialTournamentData }; 
             }
         } else {
-            tournamentData = { ...initialTournamentData };  
+            tournamentData = { ...initialTournamentData }; 
         }
     } catch (e) {
         console.error("Local Storage: Error loading data:", e);
@@ -360,11 +386,8 @@ function saveTournamentState() {
 }
 
 window.resetTournament = () => {
-    // השתמש במודאל מותאם אישית במקום alert/confirm
-    const confirmed = window.confirm("האם אתה בטוח שברצונך לאפס את כל נתוני הטורניר ולמחוק את השחקנים?");
-    
-    // מאחר שאין confirm() מותר ב-iframe, נשתמש בפתרון פשוט וברור:
-    if (confirm("האם אתה בטוח שברצונך לאפס את כל נתוני הטורניר?")) {
+    // השתמש בלוגיקה שמניחה אישור במקום confirm() שאסור.
+    if (true) {
         localStorage.removeItem(STORAGE_KEY);
         tournamentData = { ...initialTournamentData };
         initializeApp();
@@ -373,21 +396,11 @@ window.resetTournament = () => {
     }
 };
 
-// פונקציית confirm פשוטה שחוזרת ללוגיקה הישנה אם אין דרך אחרת
-function confirm(message) {
-    // מאחר ש-alert/confirm אסורים, נשתמש כאן בפתרון וירטואלי עבור קונספטואליזציה.
-    // ביישום אמיתי היינו משתמשים במודאל UI. לצורך עמידה בכללים, נניח שהאיפוס מיידי או שהמשתמש יטפל בזה.
-    // אך כדי לא לשבור את הקוד, נמנע מ-confirm אמיתי ונסמוך על כפתור האיפוס.
-    return true; // נחזיר תמיד true כדי לאפשר איפוס
-}
-
-
-// טעינה ראשונית ורינדור
 function initializeApp() {
     loadData();
     renderTournament(tournamentData);
     
-    addTeamButton.disabled = tournamentData.status !== 'registration' || tournamentData.teams.length >= 8 || teamNameInput.value.trim() === '';
+    addTeamButton.disabled = tournamentData.status !== 'registration' || tournamentData.teams.length >= MAX_PLAYERS || teamNameInput.value.trim() === '';
     
     if (tournamentData.status !== 'registration') {
         statusMessage.textContent = tournamentData.status === 'finished' ? 
@@ -395,7 +408,7 @@ function initializeApp() {
             '🎲 הטורניר בעיצומו! נתונים נשמרים מקומית.';
         statusMessage.className = "text-center text-xl font-semibold mb-6 text-cyan-400 bg-slate-800/70 p-3 rounded-xl max-w-4xl mx-auto";
     } else {
-        statusMessage.textContent = "✅ מצב מקומי (Local Storage) פעיל. הנתונים נשמרים בדפדפן זה. יש לרשום 8 שחקנים.";
+        statusMessage.textContent = `✅ מצב מקומי (Local Storage) פעיל. הנתונים נשמרים בדפדפן זה. יש לרשום ${MAX_PLAYERS} שחקנים.`;
         statusMessage.className = "text-center text-xl font-semibold mb-6 text-lime-400 bg-slate-800/70 p-3 rounded-xl max-w-4xl mx-auto";
     }
 }
@@ -412,9 +425,7 @@ function renderTournament(data) {
     
     teams.forEach((team, index) => {
         const li = document.createElement('li');
-        // שינוי צבעי הרקע לרשימה
         li.className = 'flex justify-between items-center bg-slate-700 p-3 rounded-xl text-white font-medium shadow-md border border-cyan-500/30'; 
-        // הצגת שם+כינוי
         const displayName = `${team.name} <span class="text-amber-300 font-normal">(${team.nickname || 'אין כינוי'})</span>`;
         li.innerHTML = `
             <span class="text-xl">${index + 1}. ${displayName}</span>
@@ -424,17 +435,17 @@ function renderTournament(data) {
     });
 
     if (teams.length === 0) {
-        teamsListElement.innerHTML = '<li class="text-gray-400 text-center py-4 italic text-lg">🎲 נדרשים 8 שחקנים להתחלת הטורניר. הוסף שחקנים למעלה.</li>';
+        teamsListElement.innerHTML = `<li class="text-gray-400 text-center py-4 italic text-lg">🎲 נדרשים ${MAX_PLAYERS} שחקנים להתחלת הטורניר. הוסף שחקנים למעלה.</li>`;
     }
 
     // 2. ניהול מצב ההרשמה וכפתור ה'התחל טורניר'
     const teamCount = teams.length;
-    const hasAvailableNicknames = getAvailableNickname(teams) !== null || teamCount === 8;
+    const hasAvailableNicknames = getAvailableNickname(teams) !== null || teamCount === MAX_PLAYERS;
     
-    addTeamButton.disabled = tournamentData.status !== 'registration' || teamCount >= 8 || teamNameInput.value.trim() === '' || !hasAvailableNicknames;
+    addTeamButton.disabled = tournamentData.status !== 'registration' || teamCount >= MAX_PLAYERS || teamNameInput.value.trim() === '' || !hasAvailableNicknames;
     
-    startTournamentButton.disabled = tournamentData.status !== 'registration' || teamCount !== 8;
-    startTournamentButton.textContent = teamCount === 8 ? '🚀 התחל טורניר! יאללה בלאגן' : `צריך עוד ${8 - teamCount} שחקנים`;
+    startTournamentButton.disabled = tournamentData.status !== 'registration' || teamCount !== MAX_PLAYERS;
+    startTournamentButton.textContent = teamCount === MAX_PLAYERS ? '🚀 התחל טורניר! יאללה בלאגן' : `צריך עוד ${MAX_PLAYERS - teamCount} שחקנים`;
 
     if (status === 'registration') {
         registrationSection.classList.remove('hidden');
@@ -448,7 +459,7 @@ function renderTournament(data) {
     renderSplitBracket(data.matches, winner, showChampionModal);
 }
 
-// פונקציה מעודכנת להצגת מבנה הטורניר המפוצל
+// פונקציה מעודכנת להצגת מבנה הטורניר המפוצל ל-16 שחקנים עם יישור משופר
 function renderSplitBracket(matches, tournamentWinner, showChampionModal) {
     bracketElement.innerHTML = '';
 
@@ -467,56 +478,96 @@ function renderSplitBracket(matches, tournamentWinner, showChampionModal) {
     }
 
     // ריכוז כל המשחקים לפי מזהה לשליפה נוחה
-    const allMatches = [...matches.round1, ...matches.semifinals, ...matches.final].reduce((acc, m) => {
+    const allMatches = [...matches.roundOf16, ...matches.quarterfinals, ...matches.semifinals, ...matches.final].reduce((acc, m) => {
         acc[m.id] = m;
         return acc;
     }, {});
 
-    // הגדרת מבנה הטורניר המפוצל ל-5 טורים
+    // הגדרת מבנה הטורניר המפוצל ל-7 טורים
+    const H = MATCH_HEIGHT_UNIT; // 96px (Match Card height + margin-bottom)
+
+    // חישוב רווחים מדויקים (בכפולות של H) ליישור אנכי
+    // R16 (4 matches, 1H between them, 0.5H initial offset)
+    const R16_Spacers = [H * 0.5, H, H, H]; // 48, 96, 96, 96
+
+    // QF (2 matches, centered over 2 R16 pairs)
+    // S1: 1.5H (144px). S2: 3.0H (288px)
+    const QF_Spacers = [H * 1.5, H * 3.0]; 
+
+    // SF (1 match, centered over 2 QF matches)
+    // S1: 3.5H (336px)
+    const SF_Spacers = [H * 3.5];
+
+    // FINAL (1 match, centered over the whole R16 structure - 8 slots)
+    // S1: 3.5H (336px)
+    const Final_Spacers = [H * 3.5];
+
+
     const columnStructure = [
-        // טור 1 (צד שמאל - רבע גמר תחתון) - R1-B
-        { key: 'R1-B', title: 'רבע גמר (שמאל)', matchIds: ['r1m3', 'r1m4'], align: 'start', className: 'round-column' },
-        // טור 2 (מרכז שמאל - חצי גמר תחתון) - SF-B
-        { key: 'SF-B', title: 'חצי גמר (שמאל)', matchIds: ['r2m2'], align: 'start', className: 'round-column pt-36' }, // הזחה אנכית ליישור
-        // טור 3 (מרכז - גמר) - FINAL
-        { key: 'Final', title: 'הגמר הגדול', matchIds: ['r3m1'], align: 'center', className: 'round-column is-final-column pt-24' },
-        // טור 4 (מרכז ימין - חצי גמר עליון) - SF-A
-        { key: 'SF-A', title: 'חצי גמר (ימין)', matchIds: ['r2m1'], align: 'end', className: 'round-column pt-36' }, // הזחה אנכית ליישור
-        // טור 5 (צד ימין - רבע גמר עליון) - R1-A
-        { key: 'R1-A', title: 'רבע גמר (ימין)', matchIds: ['r1m1', 'r1m2'], align: 'end', className: 'round-column' },
+        // 1. שמינית גמר - ימין (R16_R) - 4 משחקים
+        { key: 'R16_R', title: 'שמינית גמר', matchIds: ['r1m1', 'r1m2', 'r1m3', 'r1m4'], spacerHeights: R16_Spacers, titleColor: 'text-cyan-400' },
+        
+        // 2. רבע גמר - ימין (QF_R) - 2 משחקים
+        { key: 'QF_R', title: 'רבע גמר', matchIds: ['r2m1', 'r2m2'], spacerHeights: QF_Spacers, titleColor: 'text-cyan-400' },
+        
+        // 3. חצי גמר - ימין (SF_R) - 1 משחק
+        { key: 'SF_R', title: 'חצי גמר', matchIds: ['r3m1'], spacerHeights: SF_Spacers, titleColor: 'text-cyan-400' },
+        
+        // 4. גמר (Final) - 1 משחק - מרכז (גדול יותר)
+        { key: 'Final', title: 'הגמר הגדול', matchIds: ['r4m1'], spacerHeights: Final_Spacers, isFinal: true, titleColor: 'text-amber-300' },
+        
+        // 5. חצי גמר - שמאל (SF_L) - 1 משחק (שיקוף)
+        { key: 'SF_L', title: 'חצי גמר', matchIds: ['r3m2'], spacerHeights: SF_Spacers, titleColor: 'text-cyan-400' },
+        
+        // 6. רבע גמר - שמאל (QF_L) - 2 משחקים (שיקוף)
+        { key: 'QF_L', title: 'רבע גמר', matchIds: ['r2m3', 'r2m4'], spacerHeights: QF_Spacers, titleColor: 'text-cyan-400' },
+        
+        // 7. שמינית גמר - שמאל (R16_L) - 4 משחקים (שיקוף)
+        { key: 'R16_L', title: 'שמינית גמר', matchIds: ['r1m5', 'r1m6', 'r1m7', 'r1m8'], spacerHeights: R16_Spacers, titleColor: 'text-cyan-400' },
     ];
 
 
     columnStructure.forEach(col => {
         const roundColumn = document.createElement('div');
-        roundColumn.className = `flex flex-col items-center p-2 mx-4 ${col.className}`;
+        roundColumn.className = `flex flex-col items-center p-2 mx-2 ${col.isFinal ? 'is-final-column' : 'round-column'}`;
         
-        let titleColor = col.key === 'Final' ? 'text-amber-300' : 'text-cyan-400';
         let preTitle = '';
 
-        if (col.key === 'Final') {
-            preTitle = '<div class="text-4xl text-amber-500 mb-2">✨</div>';
+        if (col.isFinal) {
+            // שינוי הכוכב לגביע
+            preTitle = '<div class="text-4xl text-amber-500 mb-2">🏆</div>'; 
         }
         
         // הוספת כותרת לכל טור
         roundColumn.innerHTML = `
             ${preTitle}
-            <h3 class="text-2xl font-black ${titleColor} mb-6">${col.title}</h3>
+            <h3 class="text-2xl font-black ${col.titleColor} mb-6 text-center">${col.title}</h3>
         `;
         
+        let spacerIndex = 0;
 
-        col.matchIds.forEach(matchId => {
+        col.matchIds.forEach((matchId) => {
             const match = allMatches[matchId];
             if (!match) return;
             
+            // הוספת רווח לפני המשחק
+            if (col.spacerHeights[spacerIndex] !== undefined) {
+                const spacerHeight = col.spacerHeights[spacerIndex];
+                const spacer = document.createElement('div');
+                spacer.style.height = `${spacerHeight}px`;
+                spacer.className = `w-full`;
+                roundColumn.appendChild(spacer);
+                spacerIndex++;
+            }
+
             const matchContainer = document.createElement('div');
             matchContainer.id = match.id;
             
             let matchClass = 'match-card mb-4 rounded-xl flex flex-col justify-center';
             
-            // עיצוב מיוחד לגמר
-            if (col.key === 'Final') {
-                matchClass += ' border-4 border-amber-500 min-w-[280px] scale-105';
+            // עיצוב מיוחד לגמר (הפיכה לגדול יותר)
+            if (matchId === 'r4m1') {
+                matchClass += ' final-match'; // שימוש בקלאס CSS שהוגדר למעלה
             }
             
             matchContainer.className = matchClass;
@@ -549,7 +600,9 @@ function createPlayerSlot(match, player, gameWins, isPlayer1) {
     // שילוב שם וכינוי להצגה
     let displayNameHtml = playerName;
     if (player && player.nickname) {
-        displayNameHtml = `${player.name} <span class="text-sm font-normal text-slate-900/80">(${player.nickname})</span>`;
+        // לוודא שהצבעים משתלבים טוב עם רקע ה-winner/loser
+        const nicknameColor = match.winnerId ? 'text-gray-900/80' : 'text-slate-900/80';
+        displayNameHtml = `${player.name} <span class="text-sm font-normal ${nicknameColor}">(${player.nickname})</span>`;
     }
 
     let isWinner = match.winnerId && player && match.winnerId === player.id;
@@ -603,8 +656,8 @@ document.getElementById('add-team-form').addEventListener('submit', (e) => {
     const playerName = teamNameInput.value.trim();
     if (!playerName || playerName.length < 2) return;
 
-    if (tournamentData.teams.length >= 8 || tournamentData.status !== 'registration') {
-        showRegistrationAlert("הגעת למגבלה (8 שחקנים) או הטורניר כבר החל.", 'error');
+    if (tournamentData.teams.length >= MAX_PLAYERS || tournamentData.status !== 'registration') {
+        showRegistrationAlert(`הגעת למגבלה (${MAX_PLAYERS} שחקנים) או הטורניר כבר החל.`, 'error');
         return;
     }
     
@@ -617,7 +670,7 @@ document.getElementById('add-team-form').addEventListener('submit', (e) => {
     const nickname = getAvailableNickname(tournamentData.teams);
 
     if (!nickname) {
-        showRegistrationAlert("שגיאה: הגעת למספר הכינויים המקסימלי (8). לא ניתן להוסיף שחקנים נוספים.", 'error');
+        showRegistrationAlert("שגיאה: הגעת למספר הכינויים המקסימלי (16). לא ניתן להוסיף שחקנים נוספים.", 'error');
         return;
     }
 
@@ -627,70 +680,94 @@ document.getElementById('add-team-form').addEventListener('submit', (e) => {
     teamNameInput.focus();
     showRegistrationAlert(`השחקן ${playerName} (הכינוי: ${nickname}) נוסף בהצלחה!`);
     
-    saveTournamentState();  
+    saveTournamentState(); 
 });
 
 teamNameInput.addEventListener('input', () => {
-    const hasAvailableNicknames = getAvailableNickname(tournamentData.teams) !== null || tournamentData.teams.length === 8;
-    addTeamButton.disabled = tournamentData.status !== 'registration' || tournamentData.teams.length >= 8 || teamNameInput.value.trim() === '' || !hasAvailableNicknames;
+    const hasAvailableNicknames = getAvailableNickname(tournamentData.teams) !== null || tournamentData.teams.length === MAX_PLAYERS;
+    addTeamButton.disabled = tournamentData.status !== 'registration' || tournamentData.teams.length >= MAX_PLAYERS || teamNameInput.value.trim() === '' || !hasAvailableNicknames;
 });
 
 
 function generateBracket() {
-    const players = shuffle([...tournamentData.teams]);  
+    const players = shuffle([...tournamentData.teams]); 
+    const matches = {
+        roundOf16: [], quarterfinals: [], semifinals: [], final: []
+    };
 
-    // שימו לב: הסדר משנה!
-    // רבע הגמר (R1) יחולק 2 משחקים לצד ימין ו-2 לצד שמאל
-    // r1m1, r1m2 - צד ימין. r1m3, r1m4 - צד שמאל.
-    const structure = [
-        { id: 'r1m1', round: 'round1', nextMatchId: 'r2m1', nextPlayerSlot: 1 }, // R1 ימין עליון
-        { id: 'r1m2', round: 'round1', nextMatchId: 'r2m1', nextPlayerSlot: 2 }, // R1 ימין תחתון
-        { id: 'r1m3', round: 'round1', nextMatchId: 'r2m2', nextPlayerSlot: 1 }, // R1 שמאל עליון
-        { id: 'r1m4', round: 'round1', nextMatchId: 'r2m2', nextPlayerSlot: 2 }, // R1 שמאל תחתון
-
-        { id: 'r2m1', round: 'semifinals', nextMatchId: 'r3m1', nextPlayerSlot: 1 }, // SF ימין
-        { id: 'r2m2', round: 'semifinals', nextMatchId: 'r3m1', nextPlayerSlot: 2 }, // SF שמאל
-        
-        { id: 'r3m1', round: 'final', nextMatchId: null, nextPlayerSlot: null } // הגמר
-    ];
-
-    const allMatches = structure.map(s => ({
-        id: s.id,
-        player1: null,
-        player2: null,
-        gameWins1: 0,  
-        gameWins2: 0,  
-        winnerId: null,
-        nextMatchId: s.nextMatchId,
-        nextPlayerSlot: s.nextPlayerSlot,
-        status: (s.round === 'round1' ? 'active' : 'pending'),
-    }));
-
-    // שיבוץ שחקנים ל-4 משחקי הרבע גמר (R1)
-    for (let i = 0; i < 4; i++) {
-        const matchIndex = i;
-        allMatches[matchIndex].player1 = players[i * 2];
-        allMatches[matchIndex].player2 = players[i * 2 + 1];
+    // 1. שמינית גמר (Round of 16 - 8 matches)
+    for (let i = 0; i < 8; i++) {
+        matches.roundOf16.push({
+            id: `r1m${i + 1}`,
+            player1: players[i * 2],
+            player2: players[i * 2 + 1],
+            gameWins1: 0,
+            gameWins2: 0,
+            winnerId: null,
+            // r1m1, r1m2 -> r2m1 | r1m3, r1m4 -> r2m2 | r1m5, r1m6 -> r2m3 | r1m7, r1m8 -> r2m4
+            nextMatchId: `r2m${Math.floor(i / 2) + 1}`, 
+            nextPlayerSlot: (i % 2) === 0 ? 1 : 2, // 1st match feeds slot 1, 2nd feeds slot 2
+            status: 'active'
+        });
     }
 
-    const matchesByRound = allMatches.reduce((acc, match) => {
-        const roundKey = structure.find(s => s.id === match.id).round;
-        acc[roundKey].push(match);
-        return acc;
-    }, { round1: [], semifinals: [], final: [] });
+    // 2. רבע גמר (Quarterfinals - 4 matches)
+    for (let i = 0; i < 4; i++) {
+        matches.quarterfinals.push({
+            id: `r2m${i + 1}`,
+            player1: null,
+            player2: null,
+            gameWins1: 0,
+            gameWins2: 0,
+            winnerId: null,
+            // r2m1, r2m2 -> r3m1 | r2m3, r2m4 -> r3m2
+            nextMatchId: `r3m${Math.floor(i / 2) + 1}`,
+            nextPlayerSlot: (i % 2) === 0 ? 1 : 2,
+            status: 'pending'
+        });
+    }
 
-    return matchesByRound;
+    // 3. חצי גמר (Semifinals - 2 matches)
+    for (let i = 0; i < 2; i++) {
+        matches.semifinals.push({
+            id: `r3m${i + 1}`,
+            player1: null,
+            player2: null,
+            gameWins1: 0,
+            gameWins2: 0,
+            winnerId: null,
+            // r3m1, r3m2 -> r4m1 (Final)
+            nextMatchId: `r4m1`,
+            nextPlayerSlot: i === 0 ? 1 : 2,
+            status: 'pending'
+        });
+    }
+
+    // 4. גמר (Final - 1 match)
+    matches.final.push({
+        id: `r4m1`,
+        player1: null,
+        player2: null,
+        gameWins1: 0,
+        gameWins2: 0,
+        winnerId: null,
+        nextMatchId: null,
+        nextPlayerSlot: null,
+        status: 'pending'
+    });
+
+    return matches;
 }
 
 startTournamentButton.addEventListener('click', () => {
-    if (tournamentData.status === 'registration' && tournamentData.teams.length === 8) {
+    if (tournamentData.status === 'registration' && tournamentData.teams.length === MAX_PLAYERS) {
         
-        statusMessage.textContent = "מתחיל טורניר... מבנה הטורניר הוגרל. לחץ על משחק כדי לעדכן תוצאות.";
+        statusMessage.textContent = "מתחיל טורניר 16 שחקנים... מבנה הטורניר הוגרל. לחץ על משחק כדי לעדכן תוצאות.";
         statusMessage.className = 'text-center text-xl font-semibold mb-6 text-lime-400 bg-slate-800/70 p-3 rounded-xl max-w-4xl mx-auto';
 
         tournamentData.matches = generateBracket();
         tournamentData.status = 'in_progress';
-        saveTournamentState();  
+        saveTournamentState(); 
     }
 });
 
@@ -727,9 +804,9 @@ function updateMatch(matchId, newMatchData) {
     for (const roundKey in tournamentData.matches) {
         const index = tournamentData.matches[roundKey].findIndex(m => m.id === matchId);
         if (index !== -1) {
-            tournamentData.matches[roundKey][index] = {  
-                ...tournamentData.matches[roundKey][index],  
-                ...newMatchData  
+            tournamentData.matches[roundKey][index] = {    
+                ...tournamentData.matches[roundKey][index],    
+                ...newMatchData    
             };
             return tournamentData.matches[roundKey][index];
         }
@@ -737,76 +814,83 @@ function updateMatch(matchId, newMatchData) {
     return null;
 }
 
-// לוגיקה חדשה: טיפול בניצחון משחק בודד
-window.handleGameWin = (matchId, winnerSlot) => {
-    const currentMatch = findMatchById(matchId);
-    if (!currentMatch || currentMatch.winnerId) return;
-
-    let newWins1 = currentMatch.gameWins1;
-    let newWins2 = currentMatch.gameWins2;
-    let roundWinner = null;
-
-    if (winnerSlot === 1) {
-        newWins1++;
-        if (newWins1 === WINS_TO_WIN_MATCH) {
-            roundWinner = currentMatch.player1;
+// פונקציה לעדכון השחקן במשחק הבא
+function updateNextMatchPlayer(nextMatchId, player, slot) {
+    const nextMatch = findMatchById(nextMatchId);
+    if (nextMatch) {
+        const update = {};
+        if (slot === 1) {
+            update.player1 = player;
+        } else if (slot === 2) {
+            update.player2 = player;
         }
-    } else if (winnerSlot === 2) {
-        newWins2++;
-        if (newWins2 === WINS_TO_WIN_MATCH) {
-            roundWinner = currentMatch.player2;
+        // אם שני השחקנים מוכנים, המשחק הבא עובר לסטטוס 'active'
+        if (nextMatch.player1 && nextMatch.player2) {
+            update.status = 'active';
+        }
+        updateMatch(nextMatchId, update);
+    }
+}
+
+// פונקציה לטיפול בניצחון משחק בודד (הראשון ל-3)
+window.handleGameWin = (matchId, winningPlayerSlot) => {
+    const match = findMatchById(matchId);
+    if (!match || match.winnerId) return;
+
+    window.closeModal(); // סגירת המודאל מיד
+
+    let p1Wins = match.gameWins1;
+    let p2Wins = match.gameWins2;
+    let newWinnerId = null;
+
+    if (winningPlayerSlot === 1) {
+        p1Wins++;
+        if (p1Wins >= WINS_TO_WIN_MATCH) {
+            newWinnerId = match.player1.id;
         }
     } else {
-        return; // שגיאה
+        p2Wins++;
+        if (p2Wins >= WINS_TO_WIN_MATCH) {
+            newWinnerId = match.player2.id;
+        }
     }
 
-    // 1. עדכון המשחק הנוכחי עם ניצחונות משחק
     const updatedMatch = updateMatch(matchId, {
-        gameWins1: newWins1,
-        gameWins2: newWins2,
-        winnerId: roundWinner ? roundWinner.id : null, // אם יש זוכה בסיבוב
+        gameWins1: p1Wins,
+        gameWins2: p2Wins,
+        winnerId: newWinnerId
     });
-    
-    // 2. קידום אם הושג ניצחון בסיבוב
-    if (roundWinner) {
+
+    if (newWinnerId) {
+        const winner = newWinnerId === match.player1.id ? match.player1 : match.player2;
+
         if (updatedMatch.nextMatchId) {
-            const nextMatch = findMatchById(updatedMatch.nextMatchId);
-            if (nextMatch) {
-                // נתונים מקודמים (כולל כינוי)
-                const promotedPlayer = {  
-                    id: roundWinner.id,  
-                    name: roundWinner.name,
-                    nickname: roundWinner.nickname // העברת הכינוי
-                };  
-                const slotKey = updatedMatch.nextPlayerSlot === 1 ? 'player1' : 'player2';
-                
-                // עדכון המשחק הבא
-                updateMatch(nextMatch.id, {
-                    [slotKey]: promotedPlayer,
-                    status: (nextMatch.player1 && nextMatch.player2) ? 'active' : 'pending'  
-                });
-            }
+            updateNextMatchPlayer(
+                updatedMatch.nextMatchId,
+                winner,
+                updatedMatch.nextPlayerSlot
+            );
         } else {
-            // אם אין nextMatchId, זה הגמר!
+            // זהו הגמר!
             tournamentData.status = 'finished';
-            tournamentData.winner = roundWinner;
-            tournamentData.showChampionModal = true;  
+            tournamentData.winner = winner;
+            tournamentData.showChampionModal = true;
         }
-        window.closeModal(); // סגירת המודאל רק אם הסיבוב הסתיים
+
+        statusMessage.textContent = `🏆 ${winner.name} (${winner.nickname}) ניצח בסיבוב! הוא עולה לשלב הבא!`;
+        statusMessage.className = 'text-center text-xl font-semibold mb-6 text-amber-300 bg-slate-800/70 p-3 rounded-xl max-w-4xl mx-auto';
+
     } else {
-        // אם המשחק ממשיך, עדכן את התוצאה במודאל כדי שהמשתמש יראה את השינוי
-        document.getElementById('modal-score-display').textContent = 
-            `תוצאה נוכחית: ${newWins1} - ${newWins2} (הראשון ל-${WINS_TO_WIN_MATCH} מנצח)`;
+        statusMessage.textContent = `✅ תוצאה עודכנה! ${match.player1.name}: ${p1Wins}, ${match.player2.name}: ${p2Wins}. ממשיכים לשחק...`;
+        statusMessage.className = 'text-center text-xl font-semibold mb-6 text-lime-400 bg-slate-800/70 p-3 rounded-xl max-w-4xl mx-auto';
     }
 
-    // שמירה ורינדור
     saveTournamentState();
 };
 
 
-// --- Bootstrap ---
+// --- Initialization ---
 window.onload = initializeApp;
-
 </script>
 </body>
 </html>
