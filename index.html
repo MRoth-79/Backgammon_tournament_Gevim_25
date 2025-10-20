@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>תרשים נוקאאוט שש-בש - עדכון חי</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #1f2937; /* רקע כחול כהה */
+            color: #d1d5db;
+            padding: 1rem;
+        }
+
+        /* עיצוב כללי של התרשים */
+        .bracket {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem; /* מרווח בין הסיבובים */
+        }
+
+        /* עיצוב יחידת משחק (Game Box) */
+        .match-box {
+            background-color: #374151; /* אפור כהה */
+            border: 1px solid #4b5563;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            width: 100%;
+            min-width: 150px; /* רוחב מינימלי למשחק */
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .match-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        /* עיצוב שם השחקן בתוך המשחק */
+        .player-name {
+            padding: 0.35rem 0.5rem;
+            font-size: 0.875rem; /* sm */
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #4b5563;
+        }
+
+        .match-box .player-name:last-child {
+            border-bottom: none;
+            border-radius: 0 0 6px 6px;
+        }
+
+        /* נקודות קישור בין סיבובים */
+        .connector {
+            flex-shrink: 0;
+        }
+
+        /* כותרות הסיבובים */
+        .round-header {
+            color: #fcd34d; /* זהב */
+            font-weight: 700;
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        /* סימון מנצח */
+        .winner {
+            background-color: #059669; /* ירוק בולט */
+            color: white;
+            font-weight: 900;
+        }
+
+        /* רספונסיביות למובייל (משנה לכיוון עמודה במקום שורה) */
+        @media (max-width: 768px) {
+            .bracket-container {
+                overflow-x: auto;
+            }
+            .bracket {
+                flex-direction: column;
+                gap: 1.5rem;
+                align-items: flex-start;
+                min-width: 700px; 
+            }
+            .round {
+                width: 100%;
+            }
+            .connector {
+                display: none; 
+            }
+        }
+
+        /* מודאל (תיבת קופצת) */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none; /* נסתר כברירת מחדל */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body class="rtl text-right">
+
+    <div class="text-center py-6 bg-gray-800 rounded-b-xl mb-6 shadow-xl">
+        <h1 class="text-4xl font-black text-red-500">🏆 הדרך לגביע השש-בש (עדכון חי) 🎲</h1>
+        <p class="text-xl text-yellow-400 mt-2">טורניר נוקאאוט גברברי גבים 2025</p>
+    </div>
+
+    <!-- מזהה משתמש וכפתור איפוס -->
+    <div class="flex flex-col md:flex-row justify-between items-center bg-gray-700 p-3 rounded-lg mb-4 text-sm">
+        <div id="auth-status" class="text-yellow-300 font-bold">טוען נתונים...</div>
+        <button id="reset-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-4 rounded transition mt-2 md:mt-0" style="display:none;">
+            איפוס טבלה והגרלה מחדש
+        </button>
+    </div>
+
+    <!-- קונטיינר הראשי של הטבלה -->
+    <div class="bracket-container p-4">
+        <div id="bracket-visualization" class="bracket">
+            <!-- הטבלה תטען כאן באופן דינמי -->
+        </div>
+    </div>
+    
+    <!-- מודאל לעדכון תוצאה -->
+    <div id="update-modal" class="modal">
+        <div class="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-lg mx-4">
+            <h2 class="text-2xl font-bold text-red-400 mb-6 border-b border-gray-700 pb-2" id="modal-title">עדכון תוצאה - משחק</h2>
+            
+            <form id="update-form" class="space-y-4">
+                <input type="hidden" id="match-id-input">
+                
+                <!-- שחקן 1 -->
+                <div>
+                    <label id="player1-label" class="block text-gray-300 font-bold mb-1">שחקן 1:</label>
+                    <input type="number" id="score1-input" min="0" class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white" placeholder="מספר ניצחונות">
+                </div>
+
+                <!-- שחקן 2 -->
+                <div>
+                    <label id="player2-label" class="block text-gray-300 font-bold mb-1">שחקן 2:</label>
+                    <input type="number" id="score2-input" min="0" class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white" placeholder="מספר ניצחונות">
+                </div>
+
+                <div id="result-message" class="text-sm text-yellow-400"></div>
+
+                <div class="flex justify-end space-x-2 space-x-reverse pt-4">
+                    <button type="button" onclick="closeModal()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition">
+                        ביטול
+                    </button>
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition">
+                        שמירת תוצאה
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- סקריפטים של Firebase והלוגיקה -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, query, getDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // הגדרות גלובליות
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-backgammon-app';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, userId;
+        const BRACKET_DOC_PATH = `/artifacts/${appId}/public/data/backgammon_bracket/current_tournament`;
+        
+        // הגדרת רמת לוג של פיירבייס
+        setLogLevel('error'); // נשמור על שקט, אלא אם יש בעיה רצינית
+
+        // --- אתחול Firebase ואותנטיקציה ---
+        const initFirebase = async () => {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        document.getElementById('auth-status').textContent = `מחובר | מזהה משתמש: ${userId}`;
+                        document.getElementById('reset-button').style.display = 'block';
+                        startRealtimeListener();
+                    } else {
+                        document.getElementById('auth-status').textContent = 'מנותק';
+                    }
+                });
+
+            } catch (error) {
+                console.error("Firebase Initialization Error:", error);
+                document.getElementById('auth-status').textContent = `שגיאת חיבור: ${error.message}`;
+            }
+        };
+
+        // --- מבנה הטבלה ההתחלתי (8 זוגות) ---
+        const initialBracket = [
+            // סיבוב 1 (רבע גמר) - 4 משחקים
+            { id: 'R1M1', round: 1, p1: 'יוסי ודני', p2: 'יובל ורון', s1: 0, s2: 0, next: 'R2M1', winner: null, finalScore: 3 },
+            { id: 'R1M2', round: 1, p1: 'מאור ורועי', p2: 'טל וליאור', s1: 0, s2: 0, next: 'R2M1', winner: null, finalScore: 3 },
+            { id: 'R1M3', round: 1, p1: 'אבי ואלון', p2: 'ניר ועידן', s1: 0, s2: 0, next: 'R2M2', winner: null, finalScore: 3 },
+            { id: 'R1M4', round: 1, p1: 'שחר ואסף', p2: 'בני ונועם', s1: 0, s2: 0, next: 'R2M2', winner: null, finalScore: 3 },
+            
+            // סיבוב 2 (חצי גמר) - 2 משחקים
+            { id: 'R2M1', round: 2, p1: 'TBD', p2: 'TBD', s1: 0, s2: 0, next: 'R3M1', winner: null, finalScore: 5 },
+            { id: 'R2M2', round: 2, p1: 'TBD', p2: 'TBD', s1: 0, s2: 0, next: 'R3M1', winner: null, finalScore: 5 },
+
+            // סיבוב 3 (גמר) - משחק 1
+            { id: 'R3M1', round: 3, p1: 'TBD', p2: 'TBD', s1: 0, s2: 0, next: 'WINNER', winner: null, finalScore: 7 },
+        ];
+
+        // --- לוגיקה לעדכון נתונים ---
+        const updateBracketInDB = async (matches) => {
+            if (!db || !userId) return;
+            const docRef = doc(db, BRACKET_DOC_PATH);
+            try {
+                await setDoc(docRef, { matches, lastUpdated: new Date().toISOString(), currentUserId: userId });
+            } catch (e) {
+                console.error("Error updating document: ", e);
+                alert("שגיאה בעדכון מסד הנתונים. נסה שוב.");
+            }
+        };
+
+        const resetBracket = async () => {
+             if (confirm("האם אתה בטוח שברצונך לאפס את הטבלה ולהתחיל מחדש? כל הנתונים יימחקו.")) {
+                // נשתמש בעותק של הטבלה ההתחלתית
+                await updateBracketInDB(JSON.parse(JSON.stringify(initialBracket)));
+            }
+        };
+
+        // --- לוגיקה לבניית הטבלה (View) ---
+        const renderBracket = (matches) => {
+            const container = document.getElementById('bracket-visualization');
+            container.innerHTML = '';
+            
+            const rounds = [1, 2, 3];
+            let currentBracketState = JSON.parse(JSON.stringify(matches)); // עותק מקומי
+
+            rounds.forEach(roundNum => {
+                const roundMatches = currentBracketState.filter(m => m.round === roundNum);
+                
+                const roundDiv = document.createElement('div');
+                roundDiv.className = 'round flex flex-col justify-around h-[500px] md:h-auto';
+                roundDiv.innerHTML = `<div class="round-header">${roundNum === 1 ? 'רבע גמר' : roundNum === 2 ? 'חצי גמר' : 'הגמר הגדול'}</div>`;
+                
+                let matchesHtml = '';
+                roundMatches.forEach(match => {
+                    const isFinished = match.winner !== null;
+                    
+                    const p1Class = match.winner === match.p1 ? 'winner' : (isFinished ? 'text-red-300' : '');
+                    const p2Class = match.winner === match.p2 ? 'winner' : (isFinished ? 'text-red-300' : '');
+                    
+                    matchesHtml += `
+                        <div class="match-box" data-match-id="${match.id}" onclick="openModal('${match.id}')">
+                            <div class="player-name ${p1Class}">
+                                ${match.p1} 
+                                <span class="text-xs ${match.winner === match.p1 ? 'text-white' : 'text-red-400'}">${match.s1}</span>
+                            </div>
+                            <div class="player-name ${p2Class}">
+                                ${match.p2} 
+                                <span class="text-xs ${match.winner === match.p2 ? 'text-white' : 'text-red-400'}">${match.s2}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                roundDiv.innerHTML += matchesHtml;
+                container.appendChild(roundDiv);
+                
+                // הוספת קונקטורים בין סיבובים
+                if (roundNum < 3) {
+                     const connectorDiv = document.createElement('div');
+                     connectorDiv.className = 'connector flex flex-col justify-center h-[500px] md:h-auto';
+                     // חישוב גובה דינמי של הקו בהתאם לסיבוב
+                     const connectorHeight = roundNum === 1 ? 'h-[240px]' : 'h-[100px]';
+                     
+                     connectorDiv.innerHTML = `
+                         <div class="flex items-center ${connectorHeight}">
+                            <div class="w-4 h-0 border-t-2 border-red-500"></div>
+                            <div class="w-1 h-1 bg-red-500 rounded-full"></div>
+                        </div>
+                     `;
+                     container.appendChild(connectorDiv);
+                }
+            });
+            
+            // תצוגת מנצח סופית
+            const finalMatch = currentBracketState.find(m => m.id === 'R3M1');
+            const winnerDiv = document.createElement('div');
+            winnerDiv.className = 'round flex flex-col justify-center h-[500px] md:h-auto text-center';
+            winnerDiv.innerHTML = `
+                <div class="round-header">האלופים!</div>
+                <div class="text-6xl text-yellow-400 mb-4">🏆</div>
+                <div class="match-box p-3 ${finalMatch.winner ? 'bg-yellow-600 border-yellow-300 shadow-lg' : 'bg-gray-700'}">
+                    <div class="text-xl font-black ${finalMatch.winner ? 'text-black' : 'text-gray-400'}">
+                        ${finalMatch.winner || 'ממתינים לגמר...'}
+                    </div>
+                </div>
+            `;
+            container.appendChild(winnerDiv);
+
+        };
+
+        // --- לוגיקה לעדכון הטבלה (Controller) ---
+        const updateBracketLogic = (matches) => {
+            let updatedMatches = JSON.parse(JSON.stringify(matches));
+            
+            // פונקציה פנימית לחישוב מנצח
+            const calculateWinner = (s1, s2, match) => {
+                if (s1 >= match.finalScore) return match.p1;
+                if (s2 >= match.finalScore) return match.p2;
+                return null;
+            };
+
+            // 1. קביעת מנצחים ועדכון השחקנים לסיבוב הבא
+            updatedMatches.forEach(match => {
+                match.winner = calculateWinner(match.s1, match.s2, match);
+            });
+
+            // 2. קידום שחקנים
+            const advanceWinner = (matchId, player) => {
+                const sourceMatch = updatedMatches.find(m => m.id === matchId);
+                const nextMatchId = sourceMatch?.next;
+                if (nextMatchId === 'WINNER' || !nextMatchId) return;
+
+                const nextMatch = updatedMatches.find(m => m.id === nextMatchId);
+                if (!nextMatch) return;
+
+                // קביעת מיקום השחקן במשחק הבא
+                if (matchId === 'R1M1' || matchId === 'R1M2' || matchId === 'R2M1') {
+                    // שחקן 1 (צד ימין/למעלה)
+                    nextMatch.p1 = player || 'TBD';
+                    // אם הקידום הוא לגמר, נאפס את הניקוד כדי למנוע קידום כפול
+                    if (matchId === 'R2M1') { nextMatch.s1 = 0; nextMatch.s2 = 0; }
+
+                } else if (matchId === 'R1M3' || matchId === 'R1M4' || matchId === 'R2M2') {
+                    // שחקן 2 (צד שמאל/למטה)
+                    nextMatch.p2 = player || 'TBD';
+                    if (matchId === 'R2M2') { nextMatch.s1 = 0; nextMatch.s2 = 0; }
+                }
+            };
+            
+            // קידום לסיבוב 2
+            updatedMatches.filter(m => m.round === 1 && m.winner).forEach(m => advanceWinner(m.id, m.winner));
+            // קידום לסיבוב 3 (הגמר)
+            updatedMatches.filter(m => m.round === 2 && m.winner).forEach(m => advanceWinner(m.id, m.winner));
+
+            return updatedMatches;
+        };
+
+
+        // --- מאזין בזמן אמת (Firestore) ---
+        const startRealtimeListener = async () => {
+            const docRef = doc(db, BRACKET_DOC_PATH);
+
+            // ודא שהמסמך קיים, אם לא - צור אותו
+            const docSnap = await getDoc(docRef);
+            if (!docSnap.exists() || !docSnap.data().matches || docSnap.data().matches.length === 0) {
+                console.log("Initializing new bracket document.");
+                await updateBracketInDB(initialBracket);
+            }
+            
+            onSnapshot(docRef, (doc) => {
+                if (doc.exists() && doc.data().matches) {
+                    const matchesFromDB = doc.data().matches;
+                    // הפעלת לוגיקת הקידום המלאה לפני הרינדור
+                    const calculatedMatches = updateBracketLogic(matchesFromDB);
+                    renderBracket(calculatedMatches);
+                }
+            }, (error) => {
+                console.error("Snapshot Listener Error:", error);
+                document.getElementById('auth-status').textContent = `שגיאת חיבור בזמן אמת: ${error.message}`;
+            });
+        };
+
+        // --- פונקציות המודאל (UI) ---
+        let currentMatchId = null;
+        let globalMatches = [];
+
+        window.openModal = (matchId) => {
+            currentMatchId = matchId;
+            const match = globalMatches.find(m => m.id === matchId);
+            if (!match) return;
+
+            document.getElementById('modal-title').textContent = `עדכון תוצאה: ${match.p1} נגד ${match.p2} (עד ${match.finalScore})`;
+            document.getElementById('player1-label').textContent = `ניצחונות של ${match.p1}:`;
+            document.getElementById('player2-label').textContent = `ניצחונות של ${match.p2}:`;
+            document.getElementById('score1-input').value = match.s1;
+            document.getElementById('score2-input').value = match.s2;
+            document.getElementById('match-id-input').value = matchId;
+            document.getElementById('result-message').textContent = '';
+
+            document.getElementById('update-modal').style.display = 'flex';
+        };
+
+        window.closeModal = () => {
+            document.getElementById('update-modal').style.display = 'none';
+            currentMatchId = null;
+        };
+
+        // --- טיפול בשליחת טופס ---
+        document.getElementById('update-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const matchId = document.getElementById('match-id-input').value;
+            const score1 = parseInt(document.getElementById('score1-input').value);
+            const score2 = parseInt(document.getElementById('score2-input').value);
+
+            if (isNaN(score1) || isNaN(score2) || score1 < 0 || score2 < 0) {
+                document.getElementById('result-message').textContent = 'אנא הכנס ניקוד חוקי (מספרים חיוביים).';
+                return;
+            }
+
+            const matchIndex = globalMatches.findIndex(m => m.id === matchId);
+            if (matchIndex === -1) return;
+
+            let newMatches = JSON.parse(JSON.stringify(globalMatches));
+            newMatches[matchIndex].s1 = score1;
+            newMatches[matchIndex].s2 = score2;
+            
+            // עדכון גלובלי (הלוגיקה של המנצח תרוץ ב-onSnapshot)
+            globalMatches = updateBracketLogic(newMatches);
+            
+            await updateBracketInDB(globalMatches);
+            
+            // סגירת המודאל
+            closeModal();
+        });
+        
+        // --- פונקציות עזר נוספות ---
+        window.renderBracket = (matches) => {
+            globalMatches = matches;
+            const container = document.getElementById('bracket-visualization');
+            container.innerHTML = '';
+            
+            // ... (הלוגיקה של renderBracket כפי שמוגדרת למעלה)
+            
+            const rounds = [1, 2, 3];
+            let currentBracketState = JSON.parse(JSON.stringify(matches));
+
+            rounds.forEach(roundNum => {
+                const roundMatches = currentBracketState.filter(m => m.round === roundNum);
+                
+                const roundDiv = document.createElement('div');
+                roundDiv.className = 'round flex flex-col justify-around h-full';
+                roundDiv.innerHTML = `<div class="round-header">${roundNum === 1 ? 'רבע גמר (עד 3)' : roundNum === 2 ? 'חצי גמר (עד 5)' : 'הגמר הגדול (עד 7)'}</div>`;
+                
+                let matchesHtml = '';
+                roundMatches.forEach(match => {
+                    const isFinished = match.winner !== null;
+                    const isTBD = match.p1 === 'TBD' || match.p2 === 'TBD';
+                    
+                    const p1Class = match.winner === match.p1 ? 'winner' : (isFinished ? 'text-red-300' : '');
+                    const p2Class = match.winner === match.p2 ? 'winner' : (isFinished ? 'text-red-300' : '');
+                    
+                    // בטל לחיצות אם זה TBD
+                    const clickHandler = isTBD ? '' : `onclick="openModal('${match.id}')"`;
+                    const cursorClass = isTBD ? 'cursor-default opacity-70' : 'cursor-pointer';
+
+                    matchesHtml += `
+                        <div class="match-box ${cursorClass}" data-match-id="${match.id}" ${clickHandler}>
+                            <div class="player-name ${p1Class}">
+                                ${match.p1} 
+                                <span class="text-xs ${match.winner === match.p1 ? 'text-white' : 'text-red-400'}">${match.s1}</span>
+                            </div>
+                            <div class="player-name ${p2Class}">
+                                ${match.p2} 
+                                <span class="text-xs ${match.winner === match.p2 ? 'text-white' : 'text-red-400'}">${match.s2}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                roundDiv.innerHTML += matchesHtml;
+                container.appendChild(roundDiv);
+                
+                // הוספת קונקטורים בין סיבובים
+                if (roundNum < 3) {
+                     const connectorDiv = document.createElement('div');
+                     connectorDiv.className = 'connector flex flex-col justify-center h-[500px] md:h-auto';
+                     // חישוב גובה דינמי של הקו בהתאם לסיבוב
+                     const connectorHeight = roundNum === 1 ? 'h-[240px]' : 'h-[100px]';
+                     
+                     connectorDiv.innerHTML = `
+                         <div class="flex items-center ${connectorHeight}">
+                            <div class="w-4 h-0 border-t-2 border-red-500"></div>
+                            <div class="w-1 h-1 bg-red-500 rounded-full"></div>
+                        </div>
+                     `;
+                     container.appendChild(connectorDiv);
+                }
+                
+                // מרווח נוסף עבור רבע הגמר והחצי גמר כדי לשמור על יישור
+                if (roundNum === 1) {
+                    const spaceDiv = document.createElement('div');
+                    spaceDiv.className = 'connector flex flex-col justify-center h-[500px] md:h-auto';
+                    spaceDiv.innerHTML = `<div class="w-4 h-0 border-t-2 border-red-500" style="visibility:hidden;"></div>`;
+                    //container.appendChild(spaceDiv);
+                }
+            });
+            
+            // תצוגת מנצח סופית
+            const finalMatch = currentBracketState.find(m => m.id === 'R3M1');
+            const winnerDiv = document.createElement('div');
+            winnerDiv.className = 'round flex flex-col justify-center h-[500px] md:h-auto text-center';
+            winnerDiv.innerHTML = `
+                <div class="round-header">האלופים!</div>
+                <div class="text-6xl text-yellow-400 mb-4">🏆</div>
+                <div class="match-box p-3 ${finalMatch.winner ? 'bg-yellow-600 border-yellow-300 shadow-lg' : 'bg-gray-700'}">
+                    <div class="text-xl font-black ${finalMatch.winner ? 'text-black' : 'text-gray-400'}">
+                        ${finalMatch.winner || 'ממתינים לגמר...'}
+                    </div>
+                </div>
+            `;
+            container.appendChild(winnerDiv);
+        };
+        
+        // --- חשיפת פונקציות גלובלית (לכפתורים) ---
+        window.resetBracket = resetBracket;
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+
+
+        // --- הפעלה ---
+        initFirebase();
+
+    </script>
+
+</body>
+</html>
