@@ -3,165 +3,210 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>טורניר השש-בש הגדול: אליפות גברברי גבים</title>
+    <title>תרשים נוקאאוט שש-בש</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- ייבוא פונט Kalam לכתב יד, Inter לבסיס -->
-    <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        /* הגדרת פונט כללי ורקע כהה */
         body {
             font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #1f2937; /* רקע אפור-כחול כהה */
+            background-color: #1f2937; /* רקע כחול כהה */
+            color: #d1d5db;
+            padding: 1rem;
         }
-        /* קונטיינר הפוסטר הראשי - לוח שש-בש יוקרתי */
-        .poster {
-            max-width: 900px;
-            margin: 2rem auto;
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
-            border: 8px solid #fcd34d; /* גבול זהב בולט */
-            color: #ffffff;
-            /* שימוש בתמונה שנשלחה כרקע עם שכבה כהה */
-            background-image: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), 
-                              url('uploaded:image_2cfc71.jpg-5e5286fd-43a5-42f7-942b-058933def04f'); 
-            background-size: cover;
-            background-position: center;
+
+        /* עיצוב כללי של התרשים */
+        .bracket {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem; /* מרווח בין הסיבובים */
         }
-        
-        /* כותרת ראשית בזהב ובגודל ענק */
-        .title-primary {
-            font-size: clamp(3rem, 8vw, 4.5rem);
-            font-weight: 900;
+
+        /* עיצוב יחידת משחק (Game Box) */
+        .match-box {
+            background-color: #374151; /* אפור כהה */
+            border: 1px solid #4b5563;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            width: 100%;
+            min-width: 150px; /* רוחב מינימלי למשחק */
+        }
+
+        /* עיצוב שם השחקן בתוך המשחק */
+        .player-name {
+            padding: 0.35rem 0.5rem;
+            font-size: 0.875rem; /* sm */
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #4b5563;
+        }
+
+        /* שחקן מנצח */
+        .winner {
+            background-color: #059669; /* ירוק בולט */
+            color: white;
+            border-radius: 6px 6px 0 0;
+        }
+        .match-box .player-name:last-child {
+            border-bottom: none;
+            border-radius: 0 0 6px 6px;
+        }
+
+        /* נקודות קישור בין סיבובים */
+        .connector {
+            flex-shrink: 0;
+        }
+
+        /* כותרות הסיבובים */
+        .round-header {
             color: #fcd34d; /* זהב */
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); /* הילה לבנה קלה */
-            line-height: 1.1;
-        }
-        
-        /* עיצוב סלוגן/כותרת משנית בכתב יד ירוק-בהיר */
-        .handwritten-slogan {
-            font-family: 'Kalam', cursive;
-            font-size: clamp(1.5rem, 4vw, 2.2rem);
             font-weight: 700;
-            color: #10b981; /* ירוק-טורקיז */
-            background-color: rgba(26, 32, 44, 0.8); /* רקע כהה לשקיפות */
-            border-radius: 8px;
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+            text-align: center;
         }
-        
-        /* כרטיסי פרטים מודגשים */
-        .detail-card {
-            background-color: rgba(31, 41, 55, 0.9); /* כחול כהה שקוף */
-            border-radius: 12px;
-            border: 3px solid #ef4444; /* גבול אדום לשש-בש */
-            padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-        }
-        
-        /* כפתור הרשמה מודגש (אדום-זהב) */
-        .cta-button {
-            transition: all 0.3s ease;
-            background-image: linear-gradient(to right, #ef4444 0%, #f97316 100%);
-            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
-            font-weight: 900;
-        }
-        .cta-button:hover {
-            transform: scale(1.03);
-            background-image: linear-gradient(to right, #f97316 0%, #ef4444 100%);
+
+        /* רספונסיביות למובייל (משנה לכיוון עמודה במקום שורה) */
+        @media (max-width: 768px) {
+            .bracket-container {
+                overflow-x: auto;
+            }
+            .bracket {
+                flex-direction: column;
+                gap: 1.5rem;
+                align-items: flex-start;
+                min-width: 600px; /* כדי להבטיח שהתרשים אכן גולל */
+            }
+            .round {
+                width: 100%;
+            }
+            .connector {
+                display: none; /* מסתיר את הקווים במובייל */
+            }
         }
     </style>
 </head>
 <body class="rtl text-right">
 
-    <div class="poster">
-        <!-- כותרת ראשית וסלוגן -->
-        <header class="text-center mb-10">
-            <h1 class="title-primary">טורניר השש-בש הגדול <span class="text-red-500">🎲</span></h1>
-            <h2 class="text-3xl font-extrabold text-gray-200 mt-2">אליפות גברברי גבים 2025</h2>
+    <div class="text-center py-6 bg-gray-800 rounded-b-xl mb-6 shadow-xl">
+        <h1 class="text-4xl font-black text-red-500">🏆 הדרך לגביע השש-בש 🎲</h1>
+        <p class="text-xl text-yellow-400 mt-2">טורניר נוקאאוט גברברי גבים 2025</p>
+    </div>
+
+    <!-- קונטיינר הראשי של הטבלה -->
+    <div class="bracket-container p-4">
+        <div class="bracket">
             
-            <p class="handwritten-slogan mt-4 px-4 inline-block transform rotate-[-1deg] shadow-lg">
-                **יום חמישי, 13 בנובמבר:**<br>
-                <span class="text-white">בואו להטיל את הקוביות ולכבוש את החאן!</span>
-            </p>
-        </header>
-
-        <div class="grid md:grid-cols-2 gap-8">
-
-            <!-- פרטי המפגש ופורמט -->
-            <section class="detail-card">
-                <h3 class="text-2xl font-bold text-red-400 border-b-2 border-red-600 pb-2 mb-4">📍 פרטים ולוח זמנים</h3>
-                <div class="space-y-3 text-lg text-gray-100">
-
-                    <p class="font-bold">
-                        <span class="text-yellow-300 ml-2">📅</span> תאריך: חמישי, 13 בנובמבר 2025
-                    </p>
-                    <p class="font-bold">
-                        <span class="text-yellow-300 ml-2">⏰</span> שעת התחלה: 20:00 (לאחר ארוחת הערב)
-                    </p>
-                    <p class="font-bold">
-                        <span class="text-yellow-300 ml-2">🗺️</span> מיקום: חאן נתיב'לה
-                    </p>
-                    <p class="font-bold">
-                        <span class="text-yellow-300 ml-2">👥</span> פורמט: נוקאאוט זוגות (Best of 3)
-                    </p>
-                    <p class="text-sm pt-2 border-t border-gray-700 text-gray-400">
-                        *הרשמה מוקדמת חובה לצורך סידור לוח המשחקים והגרלת זוגות.
-                    </p>
+            <!-- סיבוב 1 (רבע גמר - 8 זוגות) -->
+            <div class="round flex flex-col justify-around h-full">
+                <div class="round-header">רבע גמר</div>
+                
+                <!-- משחק 1 -->
+                <div class="match-box">
+                    <div class="player-name">יובל ורון <span class="text-xs text-red-400">0</span></div>
+                    <div class="player-name winner">יוסי ודני <span class="text-xs text-green-300">2</span></div>
                 </div>
-            </section>
 
-            <!-- פרסים ודמי כניסה -->
-            <section class="detail-card">
-                <h3 class="text-2xl font-bold text-red-400 border-b-2 border-red-600 pb-2 mb-4">🎁 פרסים והרשמה</h3>
-                <div class="space-y-4">
-                    <!-- פרס מנצחים -->
-                    <div class="p-3 bg-gray-800 rounded-lg border-2 border-yellow-300 text-center shadow-inner">
-                        <p class="text-3xl font-black text-yellow-300 tracking-wider">
-                            👑 הזוכים: 
-                        </p>
-                        <p class="text-4xl font-extrabold text-white mt-1">
-                            בקבוק יין משובח <span class="text-red-300">🍷</span>
-                        </p>
-                        <p class="text-sm font-light text-gray-300 mt-2">וגביע האליפות המיוחל!</p>
-                    </div>
-
-                    <!-- דמי כניסה -->
-                    <div class="p-3 bg-red-800 bg-opacity-30 rounded-lg">
-                        <h4 class="font-extrabold text-yellow-400 text-center mb-1 text-xl">דמי כניסה לטורניר (למשתתף):</h4>
-                        <p class="text-center">
-                            <span class="text-5xl font-black text-green-400">50₪</span>
-                        </p>
-                        <p class="text-xs font-normal text-gray-300 mt-1 text-center">הסכום מיועד לרכישת הפרס והכיבוד הנלווה.</p>
-                    </div>
+                <!-- משחק 2 -->
+                <div class="match-box">
+                    <div class="player-name">מאור ורועי <span class="text-xs text-red-400">1</span></div>
+                    <div class="player-name winner">טל וליאור <span class="text-xs text-green-300">2</span></div>
                 </div>
-            </section>
-        </div>
 
-        <!-- כפתור הרשמה מרכזי ובולט -->
-        <div class="mt-12 text-center">
-            <h3 class="text-2xl font-bold text-white mb-4">נשארים בבית או לוקחים סיכון?</h3>
-            <a href="https://docs.google.com/forms/d/1XX7OcTgNj_02OOoZFDAmPdpLcMbLd7GPvZywF_FqXyg/edit" target="_blank" class="cta-button inline-block w-full md:w-auto px-12 py-4 text-2xl font-black text-white rounded-full shadow-xl uppercase tracking-widest">
-                <span class="ml-2">🔥</span>אני משתתף – לוחם שש-בש נולד!<span class="mr-2">🔥</span>
-            </a>
-            <p class="text-sm text-gray-400 mt-3">להרשמה, אנא לחצו על הקישור ומלאו את הטופס.</p>
-        </div>
+                <!-- מרווח בין משחקים כדי ליישר מול חצי הגמר -->
+                <div class="h-8 md:h-20"></div> 
 
-        <!-- פרטי יצירת קשר -->
-        <div class="mt-10 pt-4 text-center border-t border-gray-700 p-6">
-            <h3 class="text-xl font-extrabold text-blue-400 mb-3">לפרטים נוספים:</h3>
+                <!-- משחק 3 -->
+                <div class="match-box">
+                    <div class="player-name winner">אבי ואלון <span class="text-xs text-green-300">2</span></div>
+                    <div class="player-name">ניר ועידן <span class="text-xs text-red-400">1</span></div>
+                </div>
 
-            <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4 md:space-x-reverse">
-                <p class="text-2xl font-black text-red-400 tracking-wider">
-                    מאור רוט
-                </p>
-                <p class="text-2xl font-black text-blue-400 ml-4">
-                    050-7532966
-                </p>
-                <a href="tel:0507532966" class="inline-block px-6 py-3 bg-green-500 text-white font-bold rounded-full shadow-lg hover:bg-green-600 transition duration-300">
-                    📞 חייגו למארגן
-                </a>
+                <!-- משחק 4 -->
+                <div class="match-box">
+                    <div class="player-name">שחר ואסף <span class="text-xs text-red-400">0</span></div>
+                    <div class="player-name winner">בני ונועם <span class="text-xs text-green-300">2</span></div>
+                </div>
+
             </div>
-        </div>
 
+            <!-- קונקטורים (קווים מחברים) -->
+            <div class="connector flex flex-col justify-around h-[500px] md:h-auto">
+                <!-- קו 1 -->
+                <div class="flex items-center h-[120px]">
+                    <div class="w-4 h-0 border-t-2 border-red-500"></div>
+                    <div class="w-1 h-1 bg-red-500 rounded-full"></div>
+                </div>
+                <!-- קו 2 -->
+                <div class="flex items-center h-[120px]">
+                    <div class="w-4 h-0 border-t-2 border-red-500"></div>
+                    <div class="w-1 h-1 bg-red-500 rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- סיבוב 2 (חצי גמר) -->
+            <div class="round flex flex-col justify-around h-[500px] md:h-auto">
+                <div class="round-header">חצי גמר</div>
+
+                <!-- משחק 5 -->
+                <div class="match-box">
+                    <div class="player-name winner">יוסי ודני <span class="text-xs text-green-300">3</span></div>
+                    <div class="player-name">טל וליאור <span class="text-xs text-red-400">1</span></div>
+                </div>
+
+                <!-- מרווח גדול -->
+                <div class="h-10 md:h-40"></div> 
+
+                <!-- משחק 6 -->
+                <div class="match-box">
+                    <div class="player-name winner">אבי ואלון <span class="text-xs text-green-300">3</span></div>
+                    <div class="player-name">בני ונועם <span class="text-xs text-red-400">2</span></div>
+                </div>
+            </div>
+
+            <!-- קונקטורים (קווים מחברים) -->
+            <div class="connector flex flex-col justify-center h-[500px] md:h-auto">
+                <div class="flex items-center h-[240px]">
+                    <div class="w-4 h-0 border-t-2 border-red-500"></div>
+                    <div class="w-1 h-1 bg-red-500 rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- סיבוב 3 (הגמר) -->
+            <div class="round flex flex-col justify-center h-[500px] md:h-auto">
+                <div class="round-header">הגמר הגדול</div>
+                <!-- משחק 7 -->
+                <div class="match-box">
+                    <div class="player-name">יוסי ודני</div>
+                    <div class="player-name">אבי ואלון</div>
+                </div>
+                <div class="text-center mt-2 text-sm text-yellow-300">
+                    <p>משחק על הטוב מ-5 (Best of 5)</p>
+                </div>
+            </div>
+            
+            <!-- קונקטור לגביע -->
+            <div class="connector flex flex-col justify-center h-[500px] md:h-auto">
+                <div class="flex items-center h-[100px]">
+                    <div class="w-4 h-0 border-t-2 border-red-500"></div>
+                    <div class="w-1 h-1 bg-red-500 rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- המנצח והגביע -->
+            <div class="round flex flex-col justify-center h-[500px] md:h-auto text-center">
+                <div class="round-header">האלופים!</div>
+                <div class="text-6xl text-yellow-400 mb-4">🏆</div>
+                <div class="match-box p-3 bg-yellow-600 border-yellow-300 shadow-lg">
+                    <div class="text-xl font-black text-black">
+                        המנצחים בטורניר!
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
 
 </body>
