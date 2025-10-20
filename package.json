@@ -1,0 +1,17 @@
+{
+  "name": "backgammon_tournament_gevim_25",
+  "version": "1.0.0",
+  "description": "Project configuration for Tailwind CSS.",
+  "main": "index.js",
+  "scripts": {
+    "init-tailwind": "node ./node_modules/tailwindcss/lib/cli.js init",
+    "build-css": "node ./node_modules/tailwindcss/lib/cli.js -i ./input.css -o ./output.css",
+    "watch-css": "node ./node_modules/tailwindcss/lib/cli.js -i ./input.css -o ./output.css --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "tailwindcss": "^3.4.4"
+  }
+}
