@@ -154,40 +154,10 @@ button:hover {
     </div>
 </div>
 
-<!-- קישורי Firebase SDK -->
 <script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-import { getFirestore, doc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-
 // --- הגדרות גלובליות ---
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-let firebaseConfig = null;
-let isFirebaseAvailable = false; // דגל חדש לבדיקת זמינות Firebase
-
-try {
-    if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-        // מנסה לפרסר את הקונפיגורציה
-        const parsedConfig = JSON.parse(__firebase_config);
-        // בדיקה קריטית לוודא ש-projectId קיים
-        if (parsedConfig.projectId) {
-            firebaseConfig = parsedConfig;
-            isFirebaseAvailable = true;
-        } else {
-            console.warn("⚠️ Firebase config loaded but 'projectId' is missing. Running in local/un-saved mode.");
-        }
-    }
-} catch (e) {
-    console.error("🛑 JSON Parse Error on __firebase_config:", e);
-    // במקרה של שגיאת פרסור, נשארים במצב 'לא זמין'
-}
-
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-let db, auth, userId = null;
-// נתיב ציבורי לשמירת מצב הטורניר
-const TOURNAMENT_DOC_PATH = `/artifacts/${appId}/public/data/backgammon-tournaments/current-tournament`;
+// שם מפתח ה-localStorage לשמירת נתוני הטורניר
+const STORAGE_KEY = 'backgammon_tournament_data_v1';
 
 // --- DOM elements ---
 const teamNameInput = document.getElementById('team-name');
@@ -250,75 +220,52 @@ window.closeModal = () => {
 };
 
 
-// --- Firebase Init & Listeners ---
+// --- Local Storage Functions ---
 
-async function initializeFirebase() {
-    if (!isFirebaseAvailable) {
-        console.warn("🛑 Firebase is not available. The app will run without persistent data saving.");
-        statusMessage.textContent = "⚠️ שים לב: מצב שמירה אינו פעיל. הנתונים לא יישמרו לאחר רענון הדף.";
-        statusMessage.className = "text-center text-xl font-semibold mb-4 text-orange-400 bg-gray-700/50 p-2 rounded-lg";
-        // מאפשרים שימוש באפליקציה במצב מקומי
-        addTeamButton.disabled = false;
-        return; 
-    }
-
+function loadData() {
     try {
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-
-        // כניסה באמצעות טוקן או אנונימית
-        if (initialAuthToken) {
-            await signInWithCustomToken(auth, initialAuthToken);
-            console.log("Firebase: Signed in with custom token.");
-        } else {
-            await signInAnonymously(auth);
-            console.log("Firebase: Signed in anonymously.");
-        }
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                userId = user.uid;
-                console.log(`✅ Firebase Auth Successful. User ID: ${userId}`); // לוג קריטי לבדיקה
-                // לאחר ההזדהות, מתחילים להאזין לשינויים בטורניר
-                listenToTournamentState();
-                addTeamButton.disabled = false; // הפעלת הכפתור רק לאחר חיבור
+        const storedData = localStorage.getItem(STORAGE_KEY);
+        if (storedData) {
+            const parsedData = JSON.parse(storedData);
+            // אימות המידע הטעון
+            if (parsedData && Array.isArray(parsedData.teams) && typeof parsedData.status === 'string') {
+                tournamentData = parsedData;
+                console.log("Local Storage: Tournament data loaded successfully.");
             } else {
-                console.log("Firebase: User signed out or failed to sign in.");
+                console.warn("Local Storage: Stored data is corrupted or invalid. Starting fresh.");
+                localStorage.removeItem(STORAGE_KEY);
             }
-        });
-
-    } catch (error) {
-        console.error("🛑 Firebase initialization failed:", error);
-        statusMessage.textContent = "🛑 שגיאה: לא ניתן להתחבר ל-Firebase. הנתונים לא יישמרו.";
-        statusMessage.className = "text-center text-xl font-semibold mb-4 text-red-500 bg-red-900/50 p-2 rounded-lg";
-        addTeamButton.disabled = true;
-        startTournamentButton.disabled = true;
+        }
+    } catch (e) {
+        console.error("Local Storage: Error loading data:", e);
+        // אם יש שגיאה, מתחילים עם נתונים ריקים (כפי שהוגדרו גלובלית)
     }
 }
 
-// האזנה למצב הטורניר בזמן אמת
-function listenToTournamentState() {
-    if (!db) return;
-    const docRef = doc(db, TOURNAMENT_DOC_PATH);
-    onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-            tournamentData = docSnap.data();
-            console.log("Firebase: Tournament data updated from DB.");
-            renderTournament(tournamentData);
-        } else {
-            console.log("Firebase: No tournament data found. Initializing new state.");
-            // אם אין נתונים, יוצרים מסמך ריק התחלתי
-            setDoc(doc(db, TOURNAMENT_DOC_PATH), tournamentData, { merge: true });
-            renderTournament(tournamentData);
-        }
-    }, (error) => {
-        console.error("🛑 Firestore Snapshot Listener Error:", error);
-        // השגיאה הנפוצה היא 'Permission Denied', חשוב להציג אותה
-        statusMessage.textContent = `🛑 שגיאת האזנה ב-Firestore: ${error.message}`;
-        statusMessage.className = "text-center text-xl font-semibold mb-4 text-red-500 bg-red-900/50 p-2 rounded-lg";
-    });
+// שמירת מצב הטורניר ב-LocalStorage
+function saveTournamentState() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tournamentData));
+        console.log("Local Storage: Tournament state saved.");
+        renderTournament(tournamentData); // רינדור מיידי לאחר שמירה
+    } catch (e) {
+        console.error("Local Storage: Error saving data:", e);
+        showRegistrationAlert("שגיאה: לא ניתן לשמור את הנתונים בדפדפן.", 'error');
+    }
 }
+
+// פונקציה המדמה האזנה לשינויים (כעת קוראת רק לרינדור לאחר טעינת הנתונים)
+function initializeApp() {
+    loadData(); // טוען נתונים מה-localStorage
+    renderTournament(tournamentData); // מציג את הנתונים הטעונים
+    
+    // הפעלת כפתור הוספת הצוותים (כיוון שאין תלות ב-Firebase)
+    addTeamButton.disabled = tournamentData.status !== 'registration' || tournamentData.teams.length >= 8 || teamNameInput.value.trim() === '';
+    
+    statusMessage.textContent = "✅ מצב מקומי (Local Storage) פעיל. הנתונים נשמרים בדפדפן זה.";
+    statusMessage.className = "text-center text-xl font-semibold mb-4 text-green-400 bg-gray-700/50 p-2 rounded-lg";
+}
+
 
 // --- UI Rendering ---
 
@@ -353,18 +300,11 @@ function renderTournament(data) {
     startTournamentButton.disabled = tournamentData.status !== 'registration' || teamCount !== 8;
     startTournamentButton.textContent = teamCount === 8 ? 'התחל טורניר!' : `התחל טורניר (צריך 8 צוותים)`;
 
-    // אם Firebase לא זמין, יש להשבית את כפתור ההתחלה
-    if (!isFirebaseAvailable) {
-        startTournamentButton.disabled = true;
-    }
-
-
     if (status === 'registration') {
         registrationSection.classList.remove('hidden');
         tournamentSection.classList.add('hidden');
-        if (isFirebaseAvailable) {
-             statusMessage.textContent = `נרשמו: ${teamCount} / 8. ${teamCount === 8 ? 'מוכן להגרלה.' : 'יש לרשום 8 צוותים כדי להתחיל.'}`;
-        }
+        statusMessage.textContent = `נרשמו: ${teamCount} / 8. ${teamCount === 8 ? 'מוכן להגרלה.' : 'יש לרשום 8 צוותים כדי להתחיל.'}`;
+        statusMessage.className = "text-center text-xl font-semibold mb-4 text-green-400 bg-gray-700/50 p-2 rounded-lg";
     } else {
         registrationSection.classList.add('hidden');
         tournamentSection.classList.remove('hidden');
@@ -466,22 +406,6 @@ function createPlayerSlot(match, player, slot) {
 
 // --- Tournament Logic ---
 
-// שמירת מצב הטורניר ב-Firestore
-async function saveTournamentState() {
-    // בודק אם Firebase זמין לפני ניסיון שמירה
-    if (!isFirebaseAvailable || !db) {
-        showRegistrationAlert("שגיאה: החיבור ל-Firebase אינו פעיל. לא ניתן לשמור.", 'error');
-        // אם אין Firebase, הנתונים נשמרים רק מקומית (מה שקורה כבר דרך ה-tournamentData הגלובלי)
-        return;
-    }
-    try {
-        await setDoc(doc(db, TOURNAMENT_DOC_PATH), tournamentData);
-    } catch (e) {
-        console.error("Error saving document: ", e);
-        showRegistrationAlert(`שגיאה בשמירה: ${e.message}`, 'error');
-    }
-}
-
 // מחיקת צוות (רק בשלב ההרשמה)
 window.removeTeam = (teamIdToRemove) => {
     if (tournamentData.status !== 'registration') return;
@@ -512,7 +436,7 @@ document.getElementById('add-team-form').addEventListener('submit', (e) => {
     teamNameInput.focus(); // החזרת מיקוד להוספה מהירה של הבא
     showRegistrationAlert("הצוות נוסף בהצלחה!");
     
-    // הפונקציה הזו מעדכנת את Firebase ומפעילה את הרינדור מחדש
+    // הפונקציה הזו מעדכנת את localStorage ומפעילה את הרינדור מחדש
     saveTournamentState(); 
 });
 
@@ -569,15 +493,15 @@ function generateBracket() {
 }
 
 // טיפול בהתחלת הטורניר
-startTournamentButton.addEventListener('click', async () => {
+startTournamentButton.addEventListener('click', () => {
     if (tournamentData.status === 'registration' && tournamentData.teams.length === 8) {
         
-        statusMessage.textContent = "מתחיל טורניר... נא המתן";
+        statusMessage.textContent = "מתחיל טורניר... מבנה הטורניר הוגרל.";
         statusMessage.className = 'text-center text-xl font-semibold mb-4 text-green-500';
 
         tournamentData.matches = generateBracket();
         tournamentData.status = 'in_progress';
-        await saveTournamentState();
+        saveTournamentState(); // שמירה ורינדור
     }
 });
 
@@ -624,7 +548,7 @@ function updateMatch(matchId, newMatchData) {
 }
 
 // טיפול בשמירת תוצאה
-updateResultForm.addEventListener('submit', async (e) => {
+updateResultForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const matchId = document.getElementById('match-id').value;
     const score1 = parseInt(document.getElementById('score1').value);
@@ -632,9 +556,8 @@ updateResultForm.addEventListener('submit', async (e) => {
 
     // ולידציה בסיסית: הציון חייב להיות שונה
     if (score1 === score2) {
-        // שימוש במנגנון ההודעות הקיים במקום alert
         showRegistrationAlert("הציונים חייבים להיות שונים (שוויון אינו אפשרי בנוקאאוט).", 'error');
-        window.closeModal(); // סגירת המודאל למרות השגיאה
+        window.closeModal(); 
         return;
     }
 
@@ -672,13 +595,13 @@ updateResultForm.addEventListener('submit', async (e) => {
     }
 
     // שמירה וסגירת מודאל
-    await saveTournamentState();
+    saveTournamentState();
     window.closeModal();
 });
 
 
 // --- Bootstrap ---
-window.onload = initializeFirebase;
+window.onload = initializeApp;
 
 </script>
 </body>
