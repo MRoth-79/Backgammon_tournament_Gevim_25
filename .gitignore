@@ -1,0 +1,18 @@
+ספריות תלויות (Dependencies)
+
+/node_modules
+
+קבצי נעילה
+
+package-lock.json
+
+קבצי בנייה ופלט (CSS קומפל, קבצי לוג זמניים)
+
+output.css הוא הפלט המקומפל של Tailwind - יש להתעלם ממנו
+
+/output.css
+
+קבצי הגדרות מקומיות שאינם רלוונטיים לכלל המפתחים
+
+.DS_Store
+.env
