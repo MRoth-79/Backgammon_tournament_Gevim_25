@@ -1,936 +1,685 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Backgammon (שש-בש) - Local 2 Player</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Use Phosphor Icons for game elements -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <style>
-        /* General Setup */
-        :root {
-            --board-color: #583c27; /* Dark Brown Wood */
-            --checker-p1: #f87171; /* Red */
-            --checker-p2: #3b82f6; /* Blue */
-            --point-dark: #654321; /* Darker Brown */
-            --point-light: #8b6b4e; /* Lighter Brown */
-            --bar-color: #4b3420; /* Bar Color */
-            --highlight-color: #facc15; /* Yellow/Gold Highlight */
-            font-family: 'Inter', sans-serif;
-        }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>מערכת ניהול טורניר שש-בש</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+/* הגדרות גופן ורקע כללי */
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #1f2937; /* רקע כהה */
+  color: #d1d5db;
+  padding: 1rem;
+}
 
-        /* Board Container and Responsive Grid */
-        #game-container {
-            width: 100%;
-            max-width: 900px;
-            margin: 20px auto;
-            border: 12px solid var(--bar-color);
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            background-color: var(--board-color);
-        }
+/* סגנון כפתורים מיוחד למשחקיות */
+button {
+    transition: all 0.15s ease-in-out;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 10px -1px rgba(0, 0, 0, 0.2);
+}
 
-        #board {
-            display: grid;
-            grid-template-columns: repeat(13, 1fr); /* 6 points + 1 bar + 6 points */
-            gap: 0;
-            padding: 0;
-            position: relative;
-            user-select: none;
-        }
+/* סגנון למבנה הטורניר */
+.match-card {
+    min-width: 150px;
+    border-right: 2px solid #374151; /* קו הפרדה בין משחקים */
+    margin-bottom: 8px;
+}
+.player-slot {
+    padding: 6px 10px;
+    margin: 2px 0;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+.player-slot-empty {
+    background-color: #374151;
+    color: #9ca3af;
+    font-style: italic;
+}
+.player-slot-filled {
+    background-color: #4b5563;
+    cursor: pointer;
+}
+.player-slot-winner {
+    background-color: #10b981; /* ירוק */
+    color: #1f2937;
+    font-weight: 700;
+}
+.player-slot-loser {
+    background-color: #ef4444; /* אדום */
+    color: #1f2937;
+    text-decoration: line-through;
+    opacity: 0.7;
+}
 
-        /* The Bar (center column) */
-        #bar {
-            background-color: var(--bar-color);
-            border-left: 2px solid #332211;
-            border-right: 2px solid #332211;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
-            grid-column: 7;
-            z-index: 10;
-        }
-        
-        /* Halves of the board */
-        .board-half {
-            grid-column: span 6;
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 0;
-        }
+/* סגנון מיוחד לכרטיס הניצחון */
+#champion-card {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: #fff;
+    padding: 2rem;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 900;
+    box-shadow: 0 10px 15px rgba(245, 158, 11, 0.4);
+    animation: pulse 1.5s infinite;
+}
 
-        /* Point (Triangle) Styling */
-        .point {
-            position: relative;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            height: 250px; /* Base height for desktop */
-            min-height: 120px; /* Min height for mobile */
-            padding: 0 2px;
-        }
-        
-        /* Mobile Adjustments */
-        @media (max-width: 768px) {
-             .point {
-                height: 150px; 
-             }
-             .dice {
-                width: 30px !important;
-                height: 30px !important;
-                font-size: 1rem !important;
-             }
-             #game-controls button {
-                padding: 0.5rem 1rem !important;
-                font-size: 0.875rem !important;
-             }
-        }
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
 
-        /* Top Points (Points 13-24) */
-        #top-row .point {
-            justify-content: flex-start;
-        }
-        
-        /* Bottom Points (Points 1-12) */
-        #bottom-row .point {
-            transform: scaleY(-1); /* Flip the triangle visually */
-            justify-content: flex-start;
-        }
-        #bottom-row .checker {
-            transform: scaleY(-1); /* Flip the checker back */
-        }
-
-        /* Triangle Shape (CSS only) */
-        .point::before {
-            content: '';
-            position: absolute;
-            width: 0;
-            height: 0;
-            border-left: 30px solid transparent;
-            border-right: 30px solid transparent;
-            border-bottom: 250px solid var(--point-dark); /* Base height */
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 5;
-            transition: all 0.2s;
-        }
-        #bottom-row .point::before {
-            border-bottom: none;
-            border-top: 250px solid var(--point-dark);
-        }
-
-        /* Alternating Point Colors */
-        .point:nth-child(even)::before {
-            border-color: var(--point-light);
-        }
-        
-        /* Checker Styling */
-        .checker {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            position: relative;
-            z-index: 20;
-            margin-bottom: -15px; /* Overlap for stacking */
-            transition: all 0.3s ease;
-            cursor: grab;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: bold;
-            color: #fff;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
-            border: 2px solid rgba(255, 255, 255, 0.5);
-        }
-        
-        .checker.p1 {
-            background-color: var(--checker-p1);
-        }
-        
-        .checker.p2 {
-            background-color: var(--checker-p2);
-        }
-        
-        .checker:hover:not(.stacked) {
-            transform: scale(1.1) translateY(-5px);
-            z-index: 30;
-        }
-
-        /* Stacking Counter for more than 5 checkers */
-        .checker.stacked {
-            height: 40px;
-            width: 40px;
-            cursor: default;
-        }
-        
-        /* Highlight on selected or valid move */
-        .point.selected::before {
-            border-bottom-color: var(--highlight-color);
-            border-top-color: var(--highlight-color);
-        }
-        .point.valid-move::before {
-            border-bottom-color: #10b981; /* Emerald */
-            border-top-color: #10b981;
-            box-shadow: 0 0 15px #10b981;
-        }
-        .checker.selected {
-            border: 4px solid var(--highlight-color);
-            box-shadow: 0 0 15px var(--highlight-color);
-            transform: scale(1.2);
-        }
-
-        /* The Bar (Bar points for P1 and P2) */
-        #bar-p1, #bar-p2 {
-            min-height: 50%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 10px 0;
-            overflow: hidden;
-            position: relative;
-        }
-        #bar-p1 { justify-content: flex-end; }
-        #bar-p2 { justify-content: flex-start; }
-        .bar-checker {
-            margin: 5px 0;
-        }
-        
-        /* Off-Board (Bearing Off) Areas */
-        #off-p1, #off-p2 {
-            background-color: rgba(255, 255, 255, 0.1);
-            grid-column: 14;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-left: 6px solid #facc15;
-        }
-        #off-p1 { justify-content: flex-start; }
-        #off-p2 { justify-content: flex-end; }
-        .off-count {
-            color: #fff;
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin: 5px 0;
-            padding: 5px;
-            border-radius: 8px;
-            background-color: rgba(0, 0, 0, 0.3);
-        }
-
-        /* Control Panel */
-        #game-controls {
-            background-color: #374151;
-            padding: 1.5rem;
-            border-radius: 0 0 15px 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-        }
-        
-        #current-player-info {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 10px;
-            text-shadow: 1px 1px 2px #000;
-        }
-        #current-player-info.p1 { background-color: var(--checker-p1); }
-        #current-player-info.p2 { background-color: var(--checker-p2); }
-
-        #roll-dice-btn, #end-turn-btn {
-            background-color: #10b981; /* Emerald */
-            color: white;
-            padding: 0.75rem 2rem;
-            font-size: 1.25rem;
-            font-weight: bold;
-            border-radius: 9999px;
-            transition: all 0.3s;
-            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
-        }
-
-        #roll-dice-btn:hover:not(:disabled), #end-turn-btn:hover:not(:disabled) {
-            background-color: #059669;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(16, 185, 129, 0.6);
-        }
-        #roll-dice-btn:disabled, #end-turn-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-        
-        /* Dice Display */
-        #dice-display {
-            display: flex;
-            gap: 15px;
-            margin-top: 10px;
-            min-height: 50px;
-        }
-        .dice {
-            width: 40px;
-            height: 40px;
-            background-color: white;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #333;
-            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.3);
-            border: 2px solid var(--highlight-color);
-            transition: transform 0.2s;
-        }
-        .dice.used {
-            background-color: #ccc;
-            opacity: 0.6;
-            text-decoration: line-through;
-            border: 2px dashed #999;
-        }
-
-        /* Message Box */
-        #message-box {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 20px 40px;
-            border-radius: 15px;
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
-            z-index: 1000;
-            text-align: center;
-            max-width: 90%;
-            display: none;
-            flex-direction: column;
-            gap: 15px;
-        }
-        #message-box h2 {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        #message-box button {
-            background-color: var(--highlight-color);
-            color: #333;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            transition: background-color 0.2s;
-        }
-        #message-box button:hover {
-            background-color: #eab308;
-        }
-    </style>
+</style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="rtl text-right">
 
-    <div id="game-container">
-        
-        <div id="board">
-            
-            <!-- Top Half (Points 13-24) -->
-            <div id="top-row" class="board-half">
-                <!-- Points 13 through 24 (represented visually left to right: 24 to 13) -->
-            </div>
+<div class="text-center py-6 bg-gray-800 rounded-b-xl mb-6 shadow-xl">
+  <h1 class="text-4xl font-black text-red-500">🏆 מערכת ניהול טורניר שש-בש 🎲</h1>
+  <p class="text-xl text-yellow-400 mt-2">רישום, הגרלה ועדכון חי של הטבלה</p>
+</div>
 
-            <!-- The Bar -->
-            <div id="bar" class="grid grid-rows-2">
-                <div id="bar-p2" class="flex flex-col items-center justify-start border-b border-gray-600">
-                    <p class="text-xs text-white/50 mb-1">P2 Bar</p>
-                </div>
-                <div id="bar-p1" class="flex flex-col items-center justify-end border-t border-gray-600">
-                    <p class="text-xs text-white/50 mt-1">P1 Bar</p>
-                </div>
-            </div>
+<!-- כפתור התחלת הטורניר -->
+<div class="flex justify-center mb-4">
+  <button id="start-tournament" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-lg hover:bg-green-700 transition duration-150" disabled>התחל טורניר (צריך 8 צוותים)</button>
+</div>
 
-            <!-- The Off-Board Area -->
-            <div id="off-board" class="grid grid-rows-2 col-start-14 col-end-14">
-                <div id="off-p2" class="min-h-1/2 flex-1 border-b border-gray-600">
-                    <i class="ph-bold ph-flag text-blue-400 text-3xl"></i>
-                    <span id="p2-off-count" class="off-count">0</span>
-                </div>
-                <div id="off-p1" class="min-h-1/2 flex-1 border-t border-gray-600">
-                    <span id="p1-off-count" class="off-count">0</span>
-                    <i class="ph-bold ph-flag text-red-400 text-3xl"></i>
-                </div>
-            </div>
-            
-            <!-- Bottom Half (Points 1-12) -->
-            <div id="bottom-row" class="board-half">
-                <!-- Points 12 through 1 (represented visually left to right: 1 to 12) -->
-            </div>
+<!-- הודעות סטטוס -->
+<div id="status-message" class="text-center text-xl font-semibold mb-4 text-yellow-500"></div>
 
-        </div>
 
-        <!-- Control Panel -->
-        <div id="game-controls">
-            <div id="current-player-info" class="p1">
-                Player 1's Turn
-            </div>
-            
-            <div class="flex flex-col items-center gap-4">
-                <button id="roll-dice-btn" onclick="rollDice()">
-                    <i class="ph-bold ph-dice text-2xl align-middle mr-2"></i>
-                    Roll Dice
-                </button>
-                <button id="end-turn-btn" onclick="endTurn()" disabled>
-                    <i class="ph-bold ph-check-circle text-2xl align-middle mr-2"></i>
-                    End Turn
-                </button>
-            </div>
+<!-- טופס רישום צוותים -->
+<div id="registration-section" class="bg-gray-800 p-6 rounded-xl mb-6 shadow-lg">
+  <h2 class="text-2xl font-bold text-red-400 mb-4">רישום זוגות / צוותים (<span id="team-count">0</span>/8)</h2>
+  <form id="add-team-form" class="flex gap-2 mb-4">
+    <input id="team-name" class="flex-grow p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-red-500 focus:border-red-500" placeholder="הכנס שם זוג..." required />
+    <button id="add-team" class="bg-blue-600 p-3 rounded-lg hover:bg-blue-700 text-white font-bold" disabled>הוסף צוות</button>
+  </form>
+  <div id="registration-alert" class="text-sm h-4 mb-2 text-center"></div>
 
-            <div id="dice-display">
-                <!-- Dice will be injected here -->
-            </div>
-            
-            <p id="game-message" class="text-sm text-yellow-300 font-medium"></p>
-        </div>
+  <ul id="teams-list" class="mt-4 text-gray-300 space-y-2">
+    <!-- רשימת הצוותים תוצג כאן -->
+  </ul>
+</div>
 
+<!-- תצוגת טורניר -->
+<div id="tournament-section" class="bg-gray-800 p-6 rounded-xl shadow-lg hidden">
+  <h2 class="text-2xl font-bold text-red-400 mb-4">טבלת נוקאאוט</h2>
+  <div id="bracket" class="flex flex-row-reverse justify-start overflow-x-auto p-2">
+    <!-- מבנה הטורניר יוטען כאן -->
+  </div>
+</div>
+
+<!-- מודאל לעדכון תוצאות -->
+<div id="result-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+  <div class="bg-gray-800 p-6 rounded-xl w-full max-w-md shadow-2xl border border-red-500/50">
+    <h3 id="modal-title" class="text-2xl font-bold text-yellow-400 mb-5">עדכון תוצאת משחק</h3>
+    <form id="update-result-form" class="space-y-4">
+      <input type="hidden" id="match-id" />
+      
+      <div>
+        <label id="label-player1" class="block text-gray-300 font-semibold mb-1"></label>
+        <input type="number" min="0" id="score1" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-red-500 focus:border-red-500" placeholder="נקודות" required />
+      </div>
+      
+      <div class="text-center text-xl font-bold text-red-500">נגד</div>
+
+      <div>
+        <label id="label-player2" class="block text-gray-300 font-semibold mb-1"></label>
+        <input type="number" min="0" id="score2" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-red-500 focus:border-red-500" placeholder="נקודות" required />
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-6">
+        <button type="button" onclick="window.closeModal()" class="bg-gray-600 hover:bg-gray-700 p-3 rounded-lg text-white font-semibold transition duration-150">ביטול</button>
+        <button type="submit" class="bg-red-600 hover:bg-red-700 p-3 rounded-lg text-white font-bold transition duration-150">שמור תוצאה</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- הודעת סימון -->
+<div id="modal-placeholder" class="fixed inset-0 flex items-center justify-center hidden bg-black bg-opacity-50 z-50">
+    <div id="champion-card" class="max-w-xl">
+        <!-- הודעת הניצחון תוטען כאן -->
     </div>
+</div>
+
+<!-- קישורי Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+import { getFirestore, doc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+// --- הגדרות גלובליות ---
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+let firebaseConfig = null;
+let isFirebaseAvailable = false; // דגל חדש לבדיקת זמינות Firebase
+
+try {
+    if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+        // מנסה לפרסר את הקונפיגורציה
+        const parsedConfig = JSON.parse(__firebase_config);
+        // בדיקה קריטית לוודא ש-projectId קיים
+        if (parsedConfig.projectId) {
+            firebaseConfig = parsedConfig;
+            isFirebaseAvailable = true;
+        } else {
+            console.warn("⚠️ Firebase config loaded but 'projectId' is missing. Running in local/un-saved mode.");
+        }
+    }
+} catch (e) {
+    console.error("🛑 JSON Parse Error on __firebase_config:", e);
+    // במקרה של שגיאת פרסור, נשארים במצב 'לא זמין'
+}
+
+const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+let db, auth, userId = null;
+// נתיב ציבורי לשמירת מצב הטורניר
+const TOURNAMENT_DOC_PATH = `/artifacts/${appId}/public/data/backgammon-tournaments/current-tournament`;
+
+// --- DOM elements ---
+const teamNameInput = document.getElementById('team-name');
+const addTeamButton = document.getElementById('add-team');
+const startTournamentButton = document.getElementById('start-tournament');
+const teamsListElement = document.getElementById('teams-list');
+const teamCountElement = document.getElementById('team-count');
+const bracketElement = document.getElementById('bracket');
+const registrationSection = document.getElementById('registration-section');
+const tournamentSection = document.getElementById('tournament-section');
+const statusMessage = document.getElementById('status-message');
+const registrationAlert = document.getElementById('registration-alert');
+const resultModal = document.getElementById('result-modal');
+const updateResultForm = document.getElementById('update-result-form');
+const championModal = document.getElementById('modal-placeholder');
+const championCard = document.getElementById('champion-card');
+
+let tournamentData = {
+    teams: [],
+    status: 'registration', // 'registration', 'in_progress', 'finished'
+    matches: {
+        round1: [],
+        semifinals: [],
+        final: []
+    },
+    winner: null,
+};
+
+// --- Utilities ---
+
+// מציג הודעה זמנית באזור הרישום
+function showRegistrationAlert(message, type = 'info') {
+    registrationAlert.textContent = message;
+    registrationAlert.className = `text-sm h-4 mb-2 text-center ${type === 'error' ? 'text-red-400' : 'text-green-400'}`;
+    setTimeout(() => {
+        registrationAlert.textContent = '';
+        registrationAlert.className = 'text-sm h-4 mb-2 text-center';
+    }, 3000);
+}
+
+// פונקציית ערבוב מערך (Fisher-Yates)
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+// מחולל מזהה ייחודי פשוט
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+}
+
+// סגירת המודאל
+window.closeModal = () => {
+    resultModal.classList.add('hidden');
+    // איפוס טופס
+    updateResultForm.reset();
+};
+
+
+// --- Firebase Init & Listeners ---
+
+async function initializeFirebase() {
+    if (!isFirebaseAvailable) {
+        console.warn("🛑 Firebase is not available. The app will run without persistent data saving.");
+        statusMessage.textContent = "⚠️ שים לב: מצב שמירה אינו פעיל. הנתונים לא יישמרו לאחר רענון הדף.";
+        statusMessage.className = "text-center text-xl font-semibold mb-4 text-orange-400 bg-gray-700/50 p-2 rounded-lg";
+        // מאפשרים שימוש באפליקציה במצב מקומי
+        addTeamButton.disabled = false;
+        return; 
+    }
+
+    try {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+
+        // כניסה באמצעות טוקן או אנונימית
+        if (initialAuthToken) {
+            await signInWithCustomToken(auth, initialAuthToken);
+            console.log("Firebase: Signed in with custom token.");
+        } else {
+            await signInAnonymously(auth);
+            console.log("Firebase: Signed in anonymously.");
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userId = user.uid;
+                console.log(`✅ Firebase Auth Successful. User ID: ${userId}`); // לוג קריטי לבדיקה
+                // לאחר ההזדהות, מתחילים להאזין לשינויים בטורניר
+                listenToTournamentState();
+                addTeamButton.disabled = false; // הפעלת הכפתור רק לאחר חיבור
+            } else {
+                console.log("Firebase: User signed out or failed to sign in.");
+            }
+        });
+
+    } catch (error) {
+        console.error("🛑 Firebase initialization failed:", error);
+        statusMessage.textContent = "🛑 שגיאה: לא ניתן להתחבר ל-Firebase. הנתונים לא יישמרו.";
+        statusMessage.className = "text-center text-xl font-semibold mb-4 text-red-500 bg-red-900/50 p-2 rounded-lg";
+        addTeamButton.disabled = true;
+        startTournamentButton.disabled = true;
+    }
+}
+
+// האזנה למצב הטורניר בזמן אמת
+function listenToTournamentState() {
+    if (!db) return;
+    const docRef = doc(db, TOURNAMENT_DOC_PATH);
+    onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+            tournamentData = docSnap.data();
+            console.log("Firebase: Tournament data updated from DB.");
+            renderTournament(tournamentData);
+        } else {
+            console.log("Firebase: No tournament data found. Initializing new state.");
+            // אם אין נתונים, יוצרים מסמך ריק התחלתי
+            setDoc(doc(db, TOURNAMENT_DOC_PATH), tournamentData, { merge: true });
+            renderTournament(tournamentData);
+        }
+    }, (error) => {
+        console.error("🛑 Firestore Snapshot Listener Error:", error);
+        // השגיאה הנפוצה היא 'Permission Denied', חשוב להציג אותה
+        statusMessage.textContent = `🛑 שגיאת האזנה ב-Firestore: ${error.message}`;
+        statusMessage.className = "text-center text-xl font-semibold mb-4 text-red-500 bg-red-900/50 p-2 rounded-lg";
+    });
+}
+
+// --- UI Rendering ---
+
+function renderTournament(data) {
+    const { teams, status, matches, winner } = data;
+
+    // 1. עדכון רשימת הצוותים וכפתור ההתחלה
+    teamsListElement.innerHTML = '';
+    teamCountElement.textContent = teams.length; // הצגת ספירת הצוותים
     
-    <!-- Custom Alert/Message Box -->
-    <div id="message-box">
-        <h2 id="message-title"></h2>
-        <p id="message-text"></p>
-        <button onclick="hideMessage()">OK</button>
-    </div>
+    teams.forEach((team, index) => {
+        const li = document.createElement('li');
+        li.className = 'flex justify-between items-center bg-gray-700 p-2 rounded-lg text-white font-medium'; // הדגשה קלה יותר
+        li.innerHTML = `
+            <span>${index + 1}. ${team.name}</span>
+            <button class="text-red-400 hover:text-red-500 text-sm" onclick="removeTeam('${team.id}')" ${status !== 'registration' ? 'disabled' : ''}>[X] הסר</button>
+        `;
+        teamsListElement.appendChild(li);
+    });
 
-    <script>
-        // --- GAME STATE AND INITIALIZATION ---
+    if (teams.length === 0) {
+        teamsListElement.innerHTML = '<li class="text-gray-500 text-center py-2">עדיין לא נרשמו צוותים.</li>';
+    }
+
+    // 2. ניהול מצב ההרשמה וכפתור ה'התחל טורניר'
+    const teamCount = teams.length;
+    
+    // כפתור ההוספה מושבת אם הקלט ריק, מלא, או הטורניר התחיל
+    addTeamButton.disabled = tournamentData.status !== 'registration' || teamCount >= 8 || teamNameInput.value.trim() === '';
+    
+    // כפתור ההתחלה מושבת אם לא 8 צוותים
+    startTournamentButton.disabled = tournamentData.status !== 'registration' || teamCount !== 8;
+    startTournamentButton.textContent = teamCount === 8 ? 'התחל טורניר!' : `התחל טורניר (צריך 8 צוותים)`;
+
+    // אם Firebase לא זמין, יש להשבית את כפתור ההתחלה
+    if (!isFirebaseAvailable) {
+        startTournamentButton.disabled = true;
+    }
+
+
+    if (status === 'registration') {
+        registrationSection.classList.remove('hidden');
+        tournamentSection.classList.add('hidden');
+        if (isFirebaseAvailable) {
+             statusMessage.textContent = `נרשמו: ${teamCount} / 8. ${teamCount === 8 ? 'מוכן להגרלה.' : 'יש לרשום 8 צוותים כדי להתחיל.'}`;
+        }
+    } else {
+        registrationSection.classList.add('hidden');
+        tournamentSection.classList.remove('hidden');
+        statusMessage.textContent = status === 'in_progress' ? 'הטורניר בעיצומו!' : 'הטורניר הסתיים!';
+    }
+    
+    // 3. הצגת טבלת הנוקאאוט
+    renderBracket(matches, winner);
+}
+
+function renderBracket(matches, tournamentWinner) {
+    bracketElement.innerHTML = '';
+
+    if (tournamentWinner) {
+        // אם יש זוכה, הצג מודאל ניצחון והפסק
+        championCard.innerHTML = `
+            <div class="flex flex-col items-center space-y-4">
+                <span class="text-6xl">👑</span>
+                <span class="text-3xl font-extrabold">המנצח הגדול:</span>
+                <span class="text-6xl font-black">${tournamentWinner.name}</span>
+                <p class="text-2xl mt-4">כל הכבוד על הזכייה בטורניר השש-בש!</p>
+            </div>
+        `;
+        championModal.classList.remove('hidden');
+        return;
+    } else {
+        championModal.classList.add('hidden');
+    }
+
+    const rounds = ['round1', 'semifinals', 'final'];
+
+    rounds.forEach((roundKey) => {
+        const roundMatches = matches[roundKey] || [];
         
-        // The game state array represents the 24 points, plus the bar and off-board areas.
-        // Array index 0 is P1 Off-Board, 25 is P2 Off-Board.
-        // Index 26 is P1 Bar, 27 is P2 Bar.
-        // Points 1-24 are indexed 1 to 24.
-        const BOARD_STATE = new Array(28).fill(0); 
-
-        // Initial setup for Backgammon:
-        // P1 (Red): Moves from 1 to 24 (clockwise)
-        // P2 (Blue): Moves from 24 to 1 (counter-clockwise)
+        // יצירת עמודה לסיבוב
+        const roundColumn = document.createElement('div');
+        roundColumn.className = `flex flex-col items-center p-4 min-w-[200px] border-l border-gray-700 mx-1`;
         
-        // Point: [Player, Count]
-        const INITIAL_SETUP = {
-            1: [1, 2], 
-            6: [2, 5],
-            8: [2, 3],
-            12: [1, 5],
-            13: [2, 5],
-            17: [1, 3],
-            19: [1, 5],
-            24: [2, 2],
-            26: [0, 0], // P1 Bar
-            27: [0, 0], // P2 Bar
-            0: [0, 0],  // P1 Off
-            25: [0, 0] // P2 Off
-        };
-
-        let currentPlayer = 1; // 1 for Player 1 (Red), 2 for Player 2 (Blue)
-        let dice = []; // Holds the rolled dice values (e.g., [3, 5])
-        let movesAvailable = []; // Holds the current available dice values for moves
-        let selectedChecker = null; // Point index of the selected checker (1-24, or 26/27 for bar)
-        let movesMade = 0; // Track how many moves were completed this turn
-
-        const PLAYER_INFO = {
-            1: { color: 'p1', bar: 26, off: 0, homeStart: 1, homeEnd: 6, moveDir: 1, name: 'Player 1 (Red)' },
-            2: { color: 'p2', bar: 27, off: 25, homeStart: 19, homeEnd: 24, moveDir: -1, name: 'Player 2 (Blue)' }
-        };
-
-        // --- DOM ELEMENTS ---
-        const boardEl = document.getElementById('board');
-        const topRowEl = document.getElementById('top-row');
-        const bottomRowEl = document.getElementById('bottom-row');
-        const barP1El = document.getElementById('bar-p1');
-        const barP2El = document.getElementById('bar-p2');
-        const diceDisplayEl = document.getElementById('dice-display');
-        const rollDiceBtn = document.getElementById('roll-dice-btn');
-        const endTurnBtn = document.getElementById('end-turn-btn');
-        const playerInfoEl = document.getElementById('current-player-info');
-        const gameMessageEl = document.getElementById('game-message');
-        const p1OffCountEl = document.getElementById('p1-off-count');
-        const p2OffCountEl = document.getElementById('p2-off-count');
-
-        // --- CORE GAME FUNCTIONS ---
-
-        function initializeGame() {
-            // Setup the board state based on INITIAL_SETUP
-            for (let i = 1; i <= 24; i++) {
-                if (INITIAL_SETUP[i]) {
-                    BOARD_STATE[i] = { player: INITIAL_SETUP[i][0], count: INITIAL_SETUP[i][1] };
-                } else {
-                    BOARD_STATE[i] = { player: 0, count: 0 };
-                }
-            }
-            // Setup bar and off-board states
-            BOARD_STATE[PLAYER_INFO[1].bar] = { player: 1, count: 0 };
-            BOARD_STATE[PLAYER_INFO[2].bar] = { player: 2, count: 0 };
-            BOARD_STATE[PLAYER_INFO[1].off] = { player: 1, count: 0 };
-            BOARD_STATE[PLAYER_INFO[2].off] = { player: 2, count: 0 };
-            
-            drawBoard();
-            updatePlayerInfo();
-            gameMessageEl.textContent = "Welcome! Player 1 rolls first.";
-        }
-
-        function drawBoard() {
-            topRowEl.innerHTML = '';
-            bottomRowEl.innerHTML = '';
-            barP1El.innerHTML = `<p class="text-xs text-white/50 mt-1">P1 Bar</p>`;
-            barP2El.innerHTML = `<p class="text-xs text-white/50 mb-1">P2 Bar</p>`;
-            
-            // Render Points 1-24
-            for (let i = 24; i >= 1; i--) {
-                const pointEl = createPointElement(i, BOARD_STATE[i]);
-                if (i >= 13) {
-                    topRowEl.appendChild(pointEl);
-                } else {
-                    bottomRowEl.appendChild(pointEl);
-                }
-            }
-
-            // Reverse the bottom row for correct visual order (12 to 1)
-            const bottomChildren = Array.from(bottomRowEl.children);
-            bottomRowEl.innerHTML = '';
-            bottomChildren.reverse().forEach(child => bottomRowEl.appendChild(child));
-            
-            // Render Bar Checkers
-            drawBar(1);
-            drawBar(2);
-
-            // Update Off-Board Counts
-            p1OffCountEl.textContent = BOARD_STATE[PLAYER_INFO[1].off].count;
-            p2OffCountEl.textContent = BOARD_STATE[PLAYER_INFO[2].off].count;
-        }
-
-        function createPointElement(index, state) {
-            const pointEl = document.createElement('div');
-            pointEl.className = 'point';
-            pointEl.dataset.point = index;
-            pointEl.onclick = handlePointClick;
-
-            // Optional: for debug/visualization:
-            // pointEl.style.position = 'relative';
-            // pointEl.innerHTML = `<span style="position:absolute; bottom:0; color:white; z-index:100; font-size:10px;">${index}</span>`; 
-
-            // Add checker elements
-            for (let i = 0; i < state.count; i++) {
-                const checkerEl = document.createElement('div');
-                checkerEl.className = `checker ${PLAYER_INFO[state.player].color}`;
-                checkerEl.dataset.point = index;
-                checkerEl.onclick = handleCheckerClick;
-                
-                // Show stack count if > 5
-                if (state.count > 5 && i === 4) {
-                    checkerEl.classList.add('stacked');
-                    checkerEl.textContent = state.count;
-                    pointEl.appendChild(checkerEl);
-                    break; 
-                } else if (state.count <= 5 || i < 5) {
-                    pointEl.appendChild(checkerEl);
-                }
-            }
-            return pointEl;
-        }
-
-        function drawBar(player) {
-            const barEl = player === 1 ? barP1El : barP2El;
-            const count = BOARD_STATE[PLAYER_INFO[player].bar].count;
-
-            // Clear previous bar checkers (except text label)
-            Array.from(barEl.children).filter(el => el.classList.contains('checker')).forEach(el => el.remove());
-            
-            for (let i = 0; i < count; i++) {
-                const checkerEl = document.createElement('div');
-                checkerEl.className = `checker bar-checker ${PLAYER_INFO[player].color}`;
-                checkerEl.dataset.point = PLAYER_INFO[player].bar;
-                checkerEl.onclick = handleCheckerClick;
-
-                if (count > 5 && i === 4) {
-                    checkerEl.classList.add('stacked');
-                    checkerEl.textContent = count;
-                    barEl.appendChild(checkerEl);
-                    break;
-                } else if (count <= 5 || i < 5) {
-                    barEl.appendChild(checkerEl);
-                }
-            }
-        }
+        const roundTitleMap = { 'round1': 'סיבוב 1 (רבע גמר)', 'semifinals': 'חצי גמר', 'final': 'גמר' };
+        roundColumn.innerHTML = `<h3 class="text-xl font-bold text-yellow-400 mb-4">${roundTitleMap[roundKey]}</h3>`;
         
-        function updatePlayerInfo() {
-            playerInfoEl.className = `p${currentPlayer}`;
-            playerInfoEl.textContent = `${PLAYER_INFO[currentPlayer].name}'s Turn`;
-        }
+        roundMatches.forEach(match => {
+            const matchContainer = document.createElement('div');
+            matchContainer.id = match.id;
+            matchContainer.className = 'match-card mb-4 p-2 rounded-lg bg-gray-700/50';
 
-        function showMessage(title, text) {
-            document.getElementById('message-title').textContent = title;
-            document.getElementById('message-text').textContent = text;
-            document.getElementById('message-box').style.display = 'flex';
-        }
+            const matchInfo = document.createElement('div');
+            matchInfo.className = 'flex flex-col';
 
-        function hideMessage() {
-            document.getElementById('message-box').style.display = 'none';
-        }
-
-        // --- DICE LOGIC ---
-
-        function rollDice() {
-            const d1 = Math.floor(Math.random() * 6) + 1;
-            const d2 = Math.floor(Math.random() * 6) + 1;
+            const player1Slot = createPlayerSlot(match, match.player1, 1);
+            const player2Slot = createPlayerSlot(match, match.player2, 2);
             
-            dice = [d1, d2];
-            movesAvailable = [d1, d2];
+            matchInfo.appendChild(player1Slot);
+            matchInfo.appendChild(player2Slot);
+            matchContainer.appendChild(matchInfo);
+            roundColumn.appendChild(matchContainer);
+        });
 
-            if (d1 === d2) {
-                // Doubles: 4 moves
-                movesAvailable = [d1, d1, d1, d1];
-                gameMessageEl.textContent = `DOUBLES! Rolled ${d1}. You have 4 moves.`;
-            } else {
-                gameMessageEl.textContent = `Rolled ${d1} and ${d2}. Make your moves.`;
-            }
+        bracketElement.appendChild(roundColumn);
+    });
+}
 
-            drawDice();
-            rollDiceBtn.disabled = true;
-            endTurnBtn.disabled = false;
+function createPlayerSlot(match, player, slot) {
+    const slotEl = document.createElement('div');
+    slotEl.className = 'player-slot relative';
+    
+    // קביעת מצב השחקן (מנצח, מפסיד, ממתין, ריק)
+    let teamName = player?.name || (match.status === 'pending' ? 'ממתין לזוכה' : '---');
+    let score = player?.score !== null && player?.score !== undefined ? player.score : '';
+    let isWinner = match.winnerId && player && match.winnerId === player.id;
+    let isLoser = match.winnerId && player && match.winnerId !== player.id;
+    let isEmpty = !player && match.status !== 'pending';
+
+    if (isEmpty) {
+        slotEl.classList.add('player-slot-empty');
+    } else if (isWinner) {
+        slotEl.classList.add('player-slot-winner');
+    } else if (isLoser) {
+        slotEl.classList.add('player-slot-loser');
+    } else if (player) {
+        slotEl.classList.add('player-slot-filled');
+    }
+    
+    // התוכן של הסלוט
+    slotEl.innerHTML = `
+        <span class="text-base">${teamName}</span>
+        <span class="font-bold text-sm">${score}</span>
+    `;
+
+    // הוספת יכולת לחיצה רק אם המשחק מוכן וטרם הסתיים
+    if (!match.winnerId && match.player1 && match.player2) {
+        slotEl.onclick = () => openModal(match.id);
+        slotEl.classList.add('cursor-pointer', 'hover:bg-red-500/50', 'transition');
+    }
+    
+    return slotEl;
+}
+
+
+// --- Tournament Logic ---
+
+// שמירת מצב הטורניר ב-Firestore
+async function saveTournamentState() {
+    // בודק אם Firebase זמין לפני ניסיון שמירה
+    if (!isFirebaseAvailable || !db) {
+        showRegistrationAlert("שגיאה: החיבור ל-Firebase אינו פעיל. לא ניתן לשמור.", 'error');
+        // אם אין Firebase, הנתונים נשמרים רק מקומית (מה שקורה כבר דרך ה-tournamentData הגלובלי)
+        return;
+    }
+    try {
+        await setDoc(doc(db, TOURNAMENT_DOC_PATH), tournamentData);
+    } catch (e) {
+        console.error("Error saving document: ", e);
+        showRegistrationAlert(`שגיאה בשמירה: ${e.message}`, 'error');
+    }
+}
+
+// מחיקת צוות (רק בשלב ההרשמה)
+window.removeTeam = (teamIdToRemove) => {
+    if (tournamentData.status !== 'registration') return;
+    tournamentData.teams = tournamentData.teams.filter(t => t.id !== teamIdToRemove);
+    saveTournamentState();
+}
+
+// טיפול בהוספת צוות
+document.getElementById('add-team-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const teamName = teamNameInput.value.trim();
+    if (!teamName || teamName.length < 2) return;
+
+    if (tournamentData.teams.length >= 8 || tournamentData.status !== 'registration') {
+        showRegistrationAlert("הגעת למגבלה (8 צוותים) או הטורניר כבר החל.", 'error');
+        return;
+    }
+    
+    // בדיקה למניעת כפילויות
+    if (tournamentData.teams.some(t => t.name === teamName)) {
+        showRegistrationAlert("הצוות הזה כבר רשום!", 'error');
+        return;
+    }
+
+    const newTeam = { id: generateId(), name: teamName };
+    tournamentData.teams.push(newTeam);
+    teamNameInput.value = '';
+    teamNameInput.focus(); // החזרת מיקוד להוספה מהירה של הבא
+    showRegistrationAlert("הצוות נוסף בהצלחה!");
+    
+    // הפונקציה הזו מעדכנת את Firebase ומפעילה את הרינדור מחדש
+    saveTournamentState(); 
+});
+
+// הפעלת/השבתת כפתור 'הוסף צוות' בזמן הקלדה
+teamNameInput.addEventListener('input', () => {
+    // השבתה אם הקלט ריק, מלא, או הטורניר התחיל
+    addTeamButton.disabled = tournamentData.status !== 'registration' || tournamentData.teams.length >= 8 || teamNameInput.value.trim() === '';
+});
+
+
+// יצירת מבנה הנוקאאוט והגרלת הצוותים
+function generateBracket() {
+    const teams = shuffle([...tournamentData.teams]); // ערבוב הצוותים
+
+    // 1. הגדרת מבנה המשחקים והקישוריות
+    const structure = [
+        // id, round, nextMatchId, nextPlayerSlot (1=player1, 2=player2)
+        { id: 'r1m1', round: 'round1', nextMatchId: 'r2m1', nextPlayerSlot: 1 },
+        { id: 'r1m2', round: 'round1', nextMatchId: 'r2m1', nextPlayerSlot: 2 },
+        { id: 'r1m3', round: 'round1', nextMatchId: 'r2m2', nextPlayerSlot: 1 },
+        { id: 'r1m4', round: 'round1', nextMatchId: 'r2m2', nextPlayerSlot: 2 },
+        { id: 'r2m1', round: 'semifinals', nextMatchId: 'r3m1', nextPlayerSlot: 1 },
+        { id: 'r2m2', round: 'semifinals', nextMatchId: 'r3m1', nextPlayerSlot: 2 },
+        { id: 'r3m1', round: 'final', nextMatchId: null, nextPlayerSlot: null }
+    ];
+
+    const allMatches = structure.map(s => ({
+        id: s.id,
+        player1: null,
+        player2: null,
+        score1: null,
+        score2: null,
+        winnerId: null,
+        nextMatchId: s.nextMatchId,
+        nextPlayerSlot: s.nextPlayerSlot,
+        status: (s.round === 'round1' ? 'active' : 'pending'), // רק משחקי סיבוב 1 פעילים בהתחלה
+    }));
+
+    // 2. שיבוץ הצוותים בסיבוב הראשון (רבע גמר)
+    for (let i = 0; i < 4; i++) {
+        const matchIndex = i;
+        allMatches[matchIndex].player1 = teams[i * 2];
+        allMatches[matchIndex].player2 = teams[i * 2 + 1];
+    }
+
+    // 3. סידור לפי סיבובים
+    const matchesByRound = allMatches.reduce((acc, match) => {
+        const roundKey = structure.find(s => s.id === match.id).round;
+        acc[roundKey].push(match);
+        return acc;
+    }, { round1: [], semifinals: [], final: [] });
+
+    return matchesByRound;
+}
+
+// טיפול בהתחלת הטורניר
+startTournamentButton.addEventListener('click', async () => {
+    if (tournamentData.status === 'registration' && tournamentData.teams.length === 8) {
+        
+        statusMessage.textContent = "מתחיל טורניר... נא המתן";
+        statusMessage.className = 'text-center text-xl font-semibold mb-4 text-green-500';
+
+        tournamentData.matches = generateBracket();
+        tournamentData.status = 'in_progress';
+        await saveTournamentState();
+    }
+});
+
+// פתיחת מודאל עדכון תוצאה
+window.openModal = (matchId) => {
+    const match = findMatchById(matchId);
+    if (!match || match.winnerId) return; // לא פותחים אם אין משחק או אם כבר יש זוכה
+
+    document.getElementById('match-id').value = matchId;
+    document.getElementById('modal-title').textContent = `עדכון תוצאה: ${match.player1.name} נגד ${match.player2.name}`;
+    
+    document.getElementById('label-player1').textContent = `נקודות ל-${match.player1.name}`;
+    document.getElementById('label-player2').textContent = `נקודות ל-${match.player2.name}`;
+
+    // טעינת תוצאות קודמות אם קיימות
+    document.getElementById('score1').value = match.score1 || '';
+    document.getElementById('score2').value = match.score2 || '';
+
+    resultModal.classList.remove('hidden');
+};
+
+// פונקציה למציאת משחק לפי מזהה
+function findMatchById(matchId) {
+    for (const roundKey in tournamentData.matches) {
+        const match = tournamentData.matches[roundKey].find(m => m.id === matchId);
+        if (match) return match;
+    }
+    return null;
+}
+
+// פונקציה לעדכון משחק (קידום מנצח)
+function updateMatch(matchId, newMatchData) {
+    for (const roundKey in tournamentData.matches) {
+        const index = tournamentData.matches[roundKey].findIndex(m => m.id === matchId);
+        if (index !== -1) {
+            tournamentData.matches[roundKey][index] = { 
+                ...tournamentData.matches[roundKey][index], 
+                ...newMatchData 
+            };
+            return tournamentData.matches[roundKey][index]; // החזרת האובייקט המעודכן
         }
+    }
+    return null;
+}
 
-        function drawDice() {
-            diceDisplayEl.innerHTML = '';
-            movesAvailable.forEach((value, index) => {
-                const diceEl = document.createElement('div');
-                diceEl.className = 'dice';
-                diceEl.dataset.value = value;
-                diceEl.dataset.index = index;
-                diceEl.textContent = value;
-                diceDisplayEl.appendChild(diceEl);
+// טיפול בשמירת תוצאה
+updateResultForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const matchId = document.getElementById('match-id').value;
+    const score1 = parseInt(document.getElementById('score1').value);
+    const score2 = parseInt(document.getElementById('score2').value);
+
+    // ולידציה בסיסית: הציון חייב להיות שונה
+    if (score1 === score2) {
+        // שימוש במנגנון ההודעות הקיים במקום alert
+        showRegistrationAlert("הציונים חייבים להיות שונים (שוויון אינו אפשרי בנוקאאוט).", 'error');
+        window.closeModal(); // סגירת המודאל למרות השגיאה
+        return;
+    }
+
+    const currentMatch = findMatchById(matchId);
+    if (!currentMatch) return;
+
+    // קביעת המנצח והמפסיד
+    const winner = score1 > score2 ? currentMatch.player1 : currentMatch.player2;
+    
+    // 1. עדכון המשחק הנוכחי
+    const updatedMatch = updateMatch(matchId, {
+        score1: score1,
+        score2: score2,
+        winnerId: winner.id,
+    });
+    
+    // 2. קידום המנצח לסיבוב הבא
+    if (updatedMatch.nextMatchId) {
+        const nextMatch = findMatchById(updatedMatch.nextMatchId);
+        if (nextMatch) {
+            // הנתונים המקודמים (רק ה-ID והשם)
+            const promotedPlayer = { id: winner.id, name: winner.name, score: null };
+            const slotKey = updatedMatch.nextPlayerSlot === 1 ? 'player1' : 'player2';
+            
+            // עדכון המשחק הבא
+            updateMatch(nextMatch.id, {
+                [slotKey]: promotedPlayer,
+                status: (nextMatch.player1 && nextMatch.player2) ? 'active' : 'pending' // אם שני השחקנים קודמו, המשחק הופך לפעיל
             });
         }
+    } else {
+        // אם אין nextMatchId, זה הגמר!
+        tournamentData.status = 'finished';
+        tournamentData.winner = winner;
+    }
 
-        function markDiceUsed(usedValue) {
-            let found = false;
-            
-            // Find the index of the first unused dice that matches the value
-            const indexToMark = movesAvailable.findIndex((val, index) => val === usedValue && !diceDisplayEl.children[index].classList.contains('used'));
-
-            if (indexToMark !== -1) {
-                diceDisplayEl.children[indexToMark].classList.add('used');
-                // Remove the value from movesAvailable (optional, but helps track remaining moves)
-                movesAvailable[indexToMark] = 0; 
-                found = true;
-            }
-            
-            // Check if all moves are done
-            if (movesAvailable.every(val => val === 0 || diceDisplayEl.children[movesAvailable.indexOf(val)].classList.contains('used'))) {
-                setTimeout(endTurn, 500); // Automatically end turn if no moves left
-            }
-
-            return found;
-        }
-        
-        // --- MOVEMENT VALIDATION ---
-
-        function isHomeBoard(player, pointIndex) {
-            const info = PLAYER_INFO[player];
-            if (player === 1) {
-                return pointIndex >= info.homeStart && pointIndex <= info.homeEnd;
-            } else {
-                return pointIndex >= info.homeStart && pointIndex <= info.homeEnd;
-            }
-        }
-
-        function isPlayerReadyToBearOff(player) {
-            let totalCheckersOnBoard = 0;
-            const info = PLAYER_INFO[player];
-            
-            // Check bar
-            if (BOARD_STATE[info.bar].count > 0) return false;
-
-            // Check if any checkers are outside the home board
-            for (let i = 1; i <= 24; i++) {
-                if (BOARD_STATE[i].player === player && !isHomeBoard(player, i)) {
-                    totalCheckersOnBoard += BOARD_STATE[i].count;
-                }
-            }
-            
-            // All checkers (15 total) minus those off-board must be in the home board.
-            const totalOnHomeOrBar = 15 - BOARD_STATE[info.off].count;
-            
-            return totalCheckersOnBoard === 0;
-        }
-
-        function isValidMove(startPoint, endPoint) {
-            const startState = BOARD_STATE[startPoint];
-            const endState = BOARD_STATE[endPoint];
-            const info = PLAYER_INFO[currentPlayer];
-            const isFromBar = startPoint === info.bar;
-            const isBearingOff = endPoint === info.off;
-            const distance = Math.abs(endPoint - startPoint);
-            
-            // 1. Check if the checker belongs to the current player
-            if (startState.player !== currentPlayer) return false;
-            if (startState.count === 0) return false;
-
-            // 2. Check Bar Rule: Must move from bar if checkers are on it
-            if (BOARD_STATE[info.bar].count > 0 && !isFromBar) return false;
-
-            // 3. Check Dice Match
-            if (!movesAvailable.includes(distance)) {
-                // Special check for bearing off (exact dice or dice overshoot)
-                if (isBearingOff) {
-                    const isHome = isHomeBoard(currentPlayer, startPoint);
-                    const isMaxDice = Math.max(...movesAvailable) === distance;
-                    
-                    if (isPlayerReadyToBearOff(currentPlayer) && isHome) {
-                        // Exact match OR Overshoot from last point
-                        if (movesAvailable.includes(distance)) {
-                            return true;
-                        } else if (info.moveDir === 1 && startPoint === 6) { // P1's last point
-                             return Math.max(...movesAvailable) > 6;
-                        } else if (info.moveDir === -1 && startPoint === 19) { // P2's last point
-                             return Math.max(...movesAvailable) > 6;
-                        }
-                    }
-                }
-                if (!movesAvailable.includes(distance)) return false;
-            }
-
-            // 4. Check End Point (Not bearing off)
-            if (!isBearingOff) {
-                // Cannot move to a point occupied by the opponent with 2 or more checkers (blocked)
-                if (endState.player !== 0 && endState.player !== currentPlayer && endState.count >= 2) {
-                    return false;
-                }
-            }
-
-            // 5. Check Bearing Off Rules
-            if (isBearingOff) {
-                if (!isPlayerReadyToBearOff(currentPlayer)) return false;
-                if (!isHomeBoard(currentPlayer, startPoint)) return false;
-                
-                // Overshooting allowed only from the farthest occupied point
-                if (!movesAvailable.includes(distance)) {
-                    // Find the furthest checker outside of the required distance
-                    let furthestCheckerPoint = -1;
-                    for (let i = info.homeStart; i <= info.homeEnd; i++) {
-                        if (BOARD_STATE[i].player === currentPlayer && BOARD_STATE[i].count > 0) {
-                            furthestCheckerPoint = i;
-                        }
-                    }
-                    // Overshoot is only valid if the checker being moved is at the furthest point (or beyond the required distance for that dice)
-                    if (startPoint !== furthestCheckerPoint) return false;
-                    
-                    // The used dice must be the largest available dice
-                    if (distance !== Math.max(...movesAvailable)) return false;
-                }
-            }
-
-            return true;
-        }
-        
-        // --- MOVE EXECUTION ---
-        
-        function executeMove(startPoint, endPoint) {
-            const startState = BOARD_STATE[startPoint];
-            const endState = BOARD_STATE[endPoint];
-            const info = PLAYER_INFO[currentPlayer];
-            const distance = Math.abs(endPoint - startPoint);
-
-            // 1. Mark the dice used
-            if (endPoint !== info.off) {
-                if (!markDiceUsed(distance)) {
-                    gameMessageEl.textContent = "Error: Dice value not available for that move.";
-                    return false;
-                }
-            } else {
-                 // For bearing off, we must use the smallest valid dice that covers the distance
-                const validDice = movesAvailable.filter(d => d >= distance);
-                if (validDice.length > 0) {
-                    const usedDice = Math.min(...validDice);
-                    if (!markDiceUsed(usedDice)) {
-                         gameMessageEl.textContent = "Error: Cannot bear off with available dice.";
-                         return false;
-                    }
-                } else {
-                     gameMessageEl.textContent = "Error: No dice can be used to bear off.";
-                     return false;
-                }
-            }
-
-            // 2. Handle hit (if not bearing off)
-            if (endState.player !== 0 && endState.player !== currentPlayer && endState.count === 1) {
-                const opponent = endState.player;
-                const opponentBar = PLAYER_INFO[opponent].bar;
-                
-                // Move opponent checker to the bar
-                BOARD_STATE[opponentBar].count++;
-                
-                // Clear the end point
-                endState.player = currentPlayer; // New player takes the point
-                endState.count = 1; 
-                
-                gameMessageEl.textContent = `${info.name} hit Player ${opponent} at point ${endPoint}!`;
-            } else if (endPoint !== info.off) {
-                // 3. Update end point (if not bearing off)
-                endState.player = currentPlayer;
-                endState.count++;
-            } else {
-                // 4. Handle bearing off (move to off-board)
-                BOARD_STATE[info.off].count++;
-                gameMessageEl.textContent = `${info.name} bore off a checker!`;
-            }
-            
-            // 5. Update start point
-            startState.count--;
-            if (startState.count === 0) {
-                startState.player = 0;
-            }
-            
-            // 6. Check for Win
-            if (BOARD_STATE[info.off].count === 15) {
-                setTimeout(() => showMessage('Game Over!', `${info.name} wins the game!`), 100);
-                rollDiceBtn.disabled = true;
-                endTurnBtn.disabled = true;
-            }
-
-            // 7. Redraw and reset selection
-            resetSelection();
-            drawBoard();
-            movesMade++;
-            return true;
-        }
-
-        // --- UI HANDLERS ---
-
-        function resetSelection() {
-            if (selectedChecker) {
-                const oldEl = document.querySelector(`.checker.selected`);
-                if (oldEl) oldEl.classList.remove('selected');
-                
-                // Remove valid move highlights
-                document.querySelectorAll('.point.valid-move').forEach(el => el.classList.remove('valid-move'));
-            }
-            selectedChecker = null;
-        }
-
-        function handleCheckerClick(event) {
-            event.stopPropagation();
-            
-            if (rollDiceBtn.disabled === false) {
-                 gameMessageEl.textContent = "Roll the dice first!";
-                 return;
-            }
-
-            const pointIndex = parseInt(event.currentTarget.dataset.point);
-            const state = BOARD_STATE[pointIndex];
-            const info = PLAYER_INFO[currentPlayer];
-            
-            if (state.player !== currentPlayer) {
-                 gameMessageEl.textContent = "That's not your checker!";
-                 return;
-            }
-            
-            // If the bar is not empty, only checkers on the bar can be selected.
-            if (BOARD_STATE[info.bar].count > 0 && pointIndex !== info.bar) {
-                 gameMessageEl.textContent = "You must move checkers off the bar first!";
-                 return;
-            }
-
-            // Reset selection if the same checker is clicked
-            if (selectedChecker === pointIndex) {
-                resetSelection();
-            } else {
-                resetSelection(); // Clear existing highlights
-                selectedChecker = pointIndex;
-                event.currentTarget.classList.add('selected');
-                highlightValidMoves(pointIndex);
-            }
-        }
-        
-        function handlePointClick(event) {
-            const endPoint = parseInt(event.currentTarget.dataset.point);
-            
-            if (selectedChecker === null) {
-                gameMessageEl.textContent = "Select a checker to move first.";
-                return;
-            }
-            
-            if (isValidMove(selectedChecker, endPoint)) {
-                executeMove(selectedChecker, endPoint);
-            } else {
-                gameMessageEl.textContent = "Invalid move for the selected checker and dice.";
-            }
-        }
-        
-        function highlightValidMoves(startPoint) {
-            const info = PLAYER_INFO[currentPlayer];
-            
-            // 1. Check moves to regular points
-            const currentPoints = document.querySelectorAll('.point');
-            currentPoints.forEach(pointEl => {
-                const endPoint = parseInt(pointEl.dataset.point);
-                if (isValidMove(startPoint, endPoint)) {
-                    pointEl.classList.add('valid-move');
-                }
-            });
-
-            // 2. Check move for bearing off
-            if (isPlayerReadyToBearOff(currentPlayer)) {
-                 if (isValidMove(startPoint, info.off)) {
-                    const offEl = document.getElementById(info.off === 0 ? 'off-p1' : 'off-p2');
-                    offEl.classList.add('valid-move');
-                 }
-            }
-        }
+    // שמירה וסגירת מודאל
+    await saveTournamentState();
+    window.closeModal();
+});
 
 
-        function endTurn() {
-            resetSelection();
-            
-            // Check if any moves are left that COULD be played (A complex rule, simplifying for now)
-            const remainingDice = movesAvailable.filter((val, index) => val > 0 && !diceDisplayEl.children[index].classList.contains('used'));
-            
-            if (remainingDice.length > 0) {
-                 // Simple Check: If moves were made, allow end turn. If no moves were made, check if any move was possible.
-                 // Complex Backgammon logic simplified: if the player gives up moves, that's their choice.
-                 // A simple way to check if ANY move is available would require checking all 15 checkers against all dice combinations, which is extensive.
-                 // For now, allow the end turn if moves were made or if the player chooses to pass.
-                 
-                 // If no moves were made, and dice are still available, inform the user they are passing moves.
-                 if (movesMade === 0 && remainingDice.length > 0) {
-                     gameMessageEl.textContent = `${PLAYER_INFO[currentPlayer].name} passes the remaining ${remainingDice.length} move(s).`;
-                 } else if (remainingDice.length > 0) {
-                     gameMessageEl.textContent = `${PLAYER_INFO[currentPlayer].name} passed the remaining dice.`;
-                 }
-            } else {
-                 gameMessageEl.textContent = `${PLAYER_INFO[currentPlayer].name} completed all available moves.`;
-            }
+// --- Bootstrap ---
+window.onload = initializeFirebase;
 
-            // Switch Player
-            currentPlayer = currentPlayer === 1 ? 2 : 1;
-            
-            // Reset Turn State
-            dice = [];
-            movesAvailable = [];
-            movesMade = 0;
-            diceDisplayEl.innerHTML = '';
-            
-            updatePlayerInfo();
-            rollDiceBtn.disabled = false;
-            endTurnBtn.disabled = true;
-        }
-
-
-        // --- ENTRY POINT ---
-        window.onload = initializeGame;
-
-    </script>
+</script>
 </body>
 </html>
