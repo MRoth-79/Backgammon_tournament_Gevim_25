@@ -104,7 +104,8 @@ button:hover {
 <div id="registration-section" class="bg-gray-800 p-6 rounded-xl mb-6 shadow-lg">
   <h2 class="text-2xl font-bold text-red-400 mb-4">רישום שחקנים (<span id="team-count">0</span>/8)</h2>
   <form id="add-team-form" class="flex gap-2 mb-4">
-    <input id="team-name" class="flex-grow p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-red-500 focus:border-red-500" placeholder="הכנס שם שחקן..." required />
+    <!-- כאן הוספתי את text-right -->
+    <input id="team-name" class="flex-grow p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-red-500 focus:border-red-500 **text-right**" placeholder="הכנס שם שחקן..." required />
     <button id="add-team" class="bg-blue-600 p-3 rounded-lg hover:bg-blue-700 text-white font-bold" disabled>הוסף שחקן</button>
   </form>
   <div id="registration-alert" class="text-sm h-4 mb-2 text-center"></div>
@@ -167,7 +168,19 @@ button:hover {
 // --- הגדרות גלובליות ---
 // שם מפתח ה-localStorage לשמירת נתוני הטורניר
 const STORAGE_KEY = 'backgammon_tournament_data_v1';
-const WINS_TO_WIN_MATCH = 3; // *** השינוי המבוקש: הראשון ל-3 ניצחונות משחק (הטוב מ-5) ***
+const WINS_TO_WIN_MATCH = 3; // הראשון ל-3 ניצחונות משחק (הטוב מ-5)
+
+// רשימת הכינויים המצחיקים
+const FUNNY_NICKNAMES = [
+    "הקוביה המשתוללת",
+    "המזלזל הנצחי",
+    "המנגליסט",
+    "הטריק המפתיע",
+    "שחקן השעה",
+    "החסימה הבלתי נראית",
+    "הדאבל של שישי",
+    "המגן הקורס"
+];
 
 // --- DOM elements ---
 const teamNameInput = document.getElementById('team-name');
@@ -220,6 +233,21 @@ function shuffle(array) {
 
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+}
+
+/**
+ * בוחר כינוי ייחודי פנוי מתוך רשימת הכינויים הקבועה.
+ */
+function getAvailableNickname(currentTeams) {
+    const usedNicknames = new Set(currentTeams.map(t => t.nickname).filter(n => n));
+    const availableNicknames = FUNNY_NICKNAMES.filter(n => !usedNicknames.has(n));
+
+    if (availableNicknames.length === 0) {
+        return null; // אין כינויים פנויים
+    }
+
+    const randomIndex = Math.floor(Math.random() * availableNicknames.length);
+    return availableNicknames[randomIndex];
 }
 
 window.closeModal = () => {
@@ -305,8 +333,10 @@ function renderTournament(data) {
     teams.forEach((team, index) => {
         const li = document.createElement('li');
         li.className = 'flex justify-between items-center bg-gray-700 p-2 rounded-lg text-white font-medium'; 
+        // הצגת שם+כינוי
+        const displayName = `${team.name} <span class="text-yellow-300 font-normal">(${team.nickname || 'אין כינוי'})</span>`;
         li.innerHTML = `
-            <span>${index + 1}. ${team.name}</span>
+            <span>${index + 1}. ${displayName}</span>
             <button class="text-red-400 hover:text-red-500 text-sm" onclick="removeTeam('${team.id}')" ${status !== 'registration' ? 'disabled' : ''}>[X] הסר</button>
         `;
         teamsListElement.appendChild(li);
@@ -318,7 +348,10 @@ function renderTournament(data) {
 
     // 2. ניהול מצב ההרשמה וכפתור ה'התחל טורניר'
     const teamCount = teams.length;
-    addTeamButton.disabled = tournamentData.status !== 'registration' || teamCount >= 8 || teamNameInput.value.trim() === '';
+    // הוספת בדיקה: האם נשארו כינויים? אם לא - לא לאפשר הוספה
+    const hasAvailableNicknames = getAvailableNickname(teams) !== null;
+    
+    addTeamButton.disabled = tournamentData.status !== 'registration' || teamCount >= 8 || teamNameInput.value.trim() === '' || !hasAvailableNicknames;
     
     startTournamentButton.disabled = tournamentData.status !== 'registration' || teamCount !== 8;
     startTournamentButton.textContent = teamCount === 8 ? 'התחל טורניר!' : `התחל טורניר (צריך 8 שחקנים)`;
@@ -344,7 +377,7 @@ function renderBracket(matches, tournamentWinner, showChampionModal) {
                 <span class="text-6xl">👑</span>
                 <span class="text-3xl font-extrabold">המנצח הגדול:</span>
                 <span class="text-6xl font-black">${tournamentWinner.name}</span>
-                <p class="text-2xl mt-4">כל הכבוד על הזכייה בטורניר השש-בש!</p>
+                <p class="text-2xl mt-4">(${tournamentWinner.nickname}) כל הכבוד על הזכייה בטורניר השש-בש!</p>
             </div>
         `;
         championModal.classList.remove('hidden');
@@ -390,8 +423,15 @@ function createPlayerSlot(match, player, gameWins) {
     
     let playerName = player?.name || (match.status === 'pending' ? 'ממתין לזוכה' : '---');
     // הצגת ניצחונות משחק: נציג (X/3) אם זה לא נגמר, או אם זה המנצח הכללי (בסיבוב)
-    let winsDisplay = gameWins > 0 ? `(${gameWins}/${WINS_TO_WIN_MATCH})` : ''; 
+    let winsDisplay = gameWins > 0 ? `(${gameWins}/${WINS_TO_WIN_MATCH})` : ''; 
     
+    // שילוב שם וכינוי להצגה
+    let displayName = playerName;
+    if (player && player.nickname) {
+        // שימוש בתגית span קטנה יותר עבור הכינוי כדי שלא יתפוס יותר מדי מקום
+        displayName = `${player.name} <span class="text-xs font-normal">(${player.nickname})</span>`;
+    }
+
     let isWinner = match.winnerId && player && match.winnerId === player.id;
     let isLoser = match.winnerId && player && match.winnerId !== player.id;
     let isEmpty = !player && match.status !== 'pending';
@@ -409,7 +449,7 @@ function createPlayerSlot(match, player, gameWins) {
     
     // התוכן של הסלוט
     slotEl.innerHTML = `
-        <span class="text-base">${playerName}</span>
+        <span class="text-base">${displayName}</span>
         <span class="font-bold text-sm">${winsDisplay}</span>
     `;
 
@@ -446,17 +486,26 @@ document.getElementById('add-team-form').addEventListener('submit', (e) => {
         return;
     }
 
-    const newPlayer = { id: generateId(), name: playerName };
+    // *** הוספת הכינוי המצחיק ***
+    const nickname = getAvailableNickname(tournamentData.teams);
+
+    if (!nickname) {
+        showRegistrationAlert("שגיאה: הגעת למספר הכינויים המקסימלי (8). לא ניתן להוסיף שחקנים נוספים.", 'error');
+        return;
+    }
+
+    const newPlayer = { id: generateId(), name: playerName, nickname: nickname };
     tournamentData.teams.push(newPlayer);
     teamNameInput.value = '';
     teamNameInput.focus();
-    showRegistrationAlert("השחקן נוסף בהצלחה!");
+    showRegistrationAlert(`השחקן ${playerName} (הכינוי: ${nickname}) נוסף בהצלחה!`);
     
     saveTournamentState(); 
 });
 
 teamNameInput.addEventListener('input', () => {
-    addTeamButton.disabled = tournamentData.status !== 'registration' || tournamentData.teams.length >= 8 || teamNameInput.value.trim() === '';
+    const hasAvailableNicknames = getAvailableNickname(tournamentData.teams) !== null;
+    addTeamButton.disabled = tournamentData.status !== 'registration' || tournamentData.teams.length >= 8 || teamNameInput.value.trim() === '' || !hasAvailableNicknames;
 });
 
 
@@ -477,8 +526,8 @@ function generateBracket() {
         id: s.id,
         player1: null,
         player2: null,
-        gameWins1: 0, // NEW: Game wins for Player 1
-        gameWins2: 0, // NEW: Game wins for Player 2
+        gameWins1: 0, 
+        gameWins2: 0, 
         winnerId: null,
         nextMatchId: s.nextMatchId,
         nextPlayerSlot: s.nextPlayerSlot,
@@ -519,9 +568,13 @@ window.openModal = (matchId) => {
 
     document.getElementById('match-id').value = matchId;
     
+    // שילוב שם וכינוי להצגה במודאל
+    const p1DisplayName = `${match.player1.name} (${match.player1.nickname})`;
+    const p2DisplayName = `${match.player2.name} (${match.player2.nickname})`;
+
     // הגדרת כפתורי ניצחון והצגת ניקוד משחק נוכחי
-    document.getElementById('name-player1').textContent = match.player1.name;
-    document.getElementById('name-player2').textContent = match.player2.name;
+    document.getElementById('name-player1').textContent = p1DisplayName;
+    document.getElementById('name-player2').textContent = p2DisplayName;
 
     document.getElementById('modal-score-display').textContent = 
         `תוצאה נוכחית: ${match.gameWins1} - ${match.gameWins2} (הראשון ל-${WINS_TO_WIN_MATCH})`;
@@ -586,8 +639,12 @@ window.handleGameWin = (matchId, winnerSlot) => {
         if (updatedMatch.nextMatchId) {
             const nextMatch = findMatchById(updatedMatch.nextMatchId);
             if (nextMatch) {
-                // נתונים מקודמים (רק ה-ID והשם)
-                const promotedPlayer = { id: roundWinner.id, name: roundWinner.name };
+                // נתונים מקודמים (כולל כינוי)
+                const promotedPlayer = { 
+                    id: roundWinner.id, 
+                    name: roundWinner.name,
+                    nickname: roundWinner.nickname // העברת הכינוי
+                }; 
                 const slotKey = updatedMatch.nextPlayerSlot === 1 ? 'player1' : 'player2';
                 
                 // עדכון המשחק הבא
