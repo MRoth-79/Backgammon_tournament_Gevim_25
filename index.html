@@ -514,7 +514,7 @@ function renderTournament(data) {
     teams.forEach((team, index) => {
         const li = document.createElement('li');
         li.className = 'flex justify-between items-center bg-slate-700 p-3 rounded-xl text-white font-medium shadow-md border border-cyan-500/30'; 
-        const displayName = `${team.name} <span class="text-amber-300 font-normal">(${team.nickname || 'אין כינוי'})</span>`;
+        const displayName = `${team.nickname || 'אין כינוי'} <span class="text-amber-300 font-normal">(${team.name})</span>`;
         li.innerHTML = `
             <span class="text-xl">${index + 1}. ${displayName}</span>
             <button class="text-red-400 hover:text-red-500 text-lg bg-transparent p-1 rounded-full hover:bg-red-900/50 transition font-bold" onclick="removeTeam('${team.id}')" ${status !== 'registration' ? 'disabled' : ''}>[X] הסר</button>
@@ -690,7 +690,7 @@ function createPlayerSlot(match, player, gameWins, isPlayer1) {
     if (player && player.nickname) {
         // לוודא שהצבעים משתלבים טוב עם רקע ה-winner/loser
         const nicknameColor = match.winnerId ? 'text-gray-900/80' : 'text-slate-900/80';
-        displayNameHtml = `${player.name} <span class="text-sm font-normal ${nicknameColor}">(${player.nickname})</span>`;
+        displayNameHtml = `${player.nickname} <span class="text-sm font-normal ${nicknameColor}">(${player.name})</span>`;
     }
 
     let isWinner = match.winnerId && player && match.winnerId === player.id;
