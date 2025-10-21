@@ -671,6 +671,26 @@ function renderSplitBracket(matches, tournamentWinner, showChampionModal) {
             matchContainer.appendChild(matchInfo);
             
             roundColumn.appendChild(matchContainer);
+			
+			// === הוספת ההודעה המבוקשת מתחת לגמר הגדול (r4m1) ===
+
+            if (matchId === 'r4m1') {
+
+                const announcement = document.createElement('div');
+
+                announcement.className = 'mt-4 p-3 bg-red-800/70 border-4 border-red-500 rounded-xl text-white text-center font-bold text-lg shadow-2xl animate-pulse w-full';
+
+                announcement.innerHTML = `
+
+                    <p class="text-xl font-extrabold text-yellow-300 mb-1">📢 הודעת שידור חי!</p>
+
+                    החל מרבע גמר כל המשחקים יעברו בשידור חי בצריכים משהו גבים"
+
+                `;
+
+                roundColumn.appendChild(announcement);
+
+            }
         });
 
         bracketElement.appendChild(roundColumn);
