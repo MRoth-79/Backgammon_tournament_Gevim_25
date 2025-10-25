@@ -15,6 +15,64 @@ body {
     padding: 1rem;
 }
 
+body {
+	-moz-text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%; 
+    text-size-adjust: 100%; 
+}
+
+html {
+    /* נותן תמיכה ל-Firefox (קידומת) */
+    -moz-text-size-adjust: 100%; 
+    /* נותן תמיכה ל-Safari ול-Chrome ישנים (קידומת) */
+    -webkit-text-size-adjust: 100%; 
+    /* המאפיין הסטנדרטי (Chrome/Edge מודרניים) */
+    text-size-adjust: 100%;
+}
+
+#result-modal, 
+#modal-placeholder {
+    -webkit-backdrop-filter: blur(5px); 
+    backdrop-filter: blur(5px); 
+}
+
+.match-card {
+    width: 280px; /* רוחב קבוע לכרטיס משחק */
+    min-height: 80px;
+    background-color: #334155; /* slate-700 */
+    border: 1px solid #06B6D4; /* cyan-500 */
+}
+.player-slot {
+    padding: 8px 12px;
+    border-bottom: 1px solid #475569; /* slate-600 */
+    background-color: #f1f5f9; /* רקע בהיר להדגשה */
+    color: #0f172a; /* slate-900 */
+    line-height: 1.2;
+}
+.player-slot:last-child {
+    border-bottom: none;
+}
+/* 2. עיצובי ניצחון והפסד */
+.player-slot-winner {
+    background: #10B981; /* emerald-500 - ירוק מנצח */
+    color: #0F172A; /* Slate-900 */
+    font-weight: 700;
+    box-shadow: 0 0 10px #10B981;
+}
+.player-slot-loser {
+    background: #64748B; /* slate-500 - אפור מפסיד */
+    color: #E2E8F0; /* Slate-200 */
+    text-decoration: line-through;
+    opacity: 0.8;
+}
+/* 3. אפקטי זוהר - שיפור נראות */
+.header-glow-text {
+    text-shadow: 0 0 10px #FBBE24, 0 0 20px #F59E0B;
+}
+.glow-score {
+    text-shadow: 0 0 5px #06B6D4; /* ציאן */
+}
+
 /* --- סגנונות חדשים לכותרת הראשית --- */
 /* אפקט זוהר/צל לטקסט הראשי */
 .header-glow-text {
@@ -211,18 +269,21 @@ button:hover {
 
 /* סגנון חלון קופץ (Modal) */
 .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    backdrop-filter: blur(5px);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    /* --- התיקון: הוספת הקידומת לספארי --- */
+    -webkit-backdrop-filter: blur(5px); 
+    backdrop-filter: blur(5px);
 }
+
 .modal-content {
     background-color: #1e293b;
     padding: 2rem;
@@ -244,7 +305,7 @@ button:hover {
 <body class="rtl text-right">
 
 <!-- הכותרת המעוצבת -->
-<div class="text-center py-8 mb-10 shadow-3xl rounded-b-[40px] border-b-8 border-double border-yellow-500" style="background: linear-gradient(180deg, #1e293b, #0F172A);">
+<div class="text-center py-8 mb-10 shadow-2xl rounded-b-[40px] border-b-8 border-double border-yellow-500" style="background: linear-gradient(180deg, #1e293b, #0F172A);">
     <h1 class="text-6xl md:text-7xl font-extrabold text-amber-400 tracking-wider header-glow-text">
         🏆 טיול גברים: טורניר שש-בש 🎲
     </h1>
@@ -257,11 +318,8 @@ button:hover {
 
 <!-- כפתורי בקרה -->
 <div class="flex justify-center mb-8 space-x-6 space-x-reverse">
-    <!-- כפתור התחלה בטורקיז בולט -->
-    <button id="start-tournament" class="bg-teal-600 text-white px-8 py-4 rounded-xl font-extrabold text-xl hover:bg-teal-700 transition duration-150">🚀 התחל טורניר (צריך 16 שחקנים)</button>
-    
-    <!-- FIX: שינוי onclick ל-window.resetTournament() במקום showResetConfirm() -->
-    <button id="reset-tournament" onclick="window.resetTournament()" class="bg-orange-700 text-white px-8 py-4 rounded-xl font-extrabold text-xl hover:bg-red-800 transition duration-150">❌ אפס טורניר</button>
+    <button type="button" id="start-tournament" class="bg-teal-600 text-white px-8 py-4 rounded-xl font-extrabold text-xl hover:bg-teal-700 transition duration-150">🚀 התחל טורניר (צריך 16 שחקנים)</button>
+    <button type="button" id="reset-tournament" onclick="window.resetTournament()" class="bg-orange-700 text-white px-8 py-4 rounded-xl font-extrabold text-xl hover:bg-red-800 transition duration-150">❌ אפס טורניר</button>
 </div>
 
 <!-- הודעות סטטוס -->
@@ -275,11 +333,12 @@ button:hover {
         <span class="text-4xl">👥</span>
         רשימת המזליסטים (<span id="team-count">0</span>/16)
     </h2>
-    <form id="add-team-form" class="flex gap-4 mb-4">
-        <input id="team-name" class="flex-grow p-4 bg-slate-700 border-2 border-cyan-400 rounded-xl text-white placeholder-gray-400 focus:ring-cyan-500 focus:border-cyan-500 text-right text-lg shadow-inner" placeholder="הכנס כינוי - שם מלא (לדוגמה: הקוביות - משה כהן)" required />
-        <!-- כפתור הוספה בכחול חי -->
-        <button id="add-team" class="bg-cyan-600 p-4 rounded-xl hover:bg-cyan-700 text-white font-bold text-lg" disabled>➕ הוסף שחקן</button>
-    </form>
+	
+	<form id="add-team-form" class="flex gap-4 mb-4">
+		<input id="team-name" class="flex-grow p-4 bg-slate-700 border-2 border-cyan-400 rounded-xl text-white placeholder-gray-400 focus:ring-cyan-500 focus:border-cyan-500 text-right text-lg shadow-inner" placeholder="הכנס כינוי - שם מלא (לדוגמה: הקוביות - משה כהן)" required />
+		<button type="submit" id="add-team" class="bg-cyan-600 p-4 rounded-xl hover:bg-cyan-700 text-white font-bold text-lg" disabled>➕ הוסף שחקן</button>
+	</form>
+
     <div id="registration-alert" class="text-sm h-4 mb-2 text-center text-red-400"></div>
 
     <ul id="teams-list" class="mt-4 text-gray-200 space-y-3">
@@ -517,8 +576,7 @@ function renderTournament(data) {
         const displayName = `${team.nickname || 'אין כינוי'} <span class="text-amber-300 font-normal">(${team.name})</span>`;
         li.innerHTML = `
             <span class="text-xl">${index + 1}. ${displayName}</span>
-            <button class="text-red-400 hover:text-red-500 text-lg bg-transparent p-1 rounded-full hover:bg-red-900/50 transition font-bold" onclick="removeTeam('${team.id}')" ${status !== 'registration' ? 'disabled' : ''}>[X] הסר</button>
-        `;
+		<button **type="button"** class="text-red-400 hover:text-red-500 text-lg bg-transparent p-1 rounded-full hover:bg-red-900/50 transition font-bold" onclick="removeTeam('${team.id}')" ${status !== 'registration' ? 'disabled' : ''}>[X] הסר</button>        `;
         teamsListElement.appendChild(li);
     });
 
@@ -897,6 +955,23 @@ window.openModal = (matchId) => {
     document.getElementById('match-id').value = matchId;
     document.getElementById('name-player1').textContent = match.player1.name;
     document.getElementById('name-player2').textContent = match.player2.name;
+	
+	const greenClasses = 'w-full p-5 rounded-2xl text-white font-black transition duration-150 flex justify-between items-center text-2xl shadow-xl hover:shadow-green-400/50 hover:bg-green-600';
+
+	const btnP1 = document.getElementById('btn-p1-win');
+	const btnP2 = document.getElementById('btn-p2-win');
+
+	// 2. החלפת הקלאסים
+	btnP1.className = greenClasses;
+	btnP2.className = greenClasses;
+
+	// 3. דריסה חזקה: הגדרת צבע רקע ירוק ישירות ב-style
+	btnP1.style.backgroundColor = '#047857'; // Tailwind green-700
+	btnP2.style.backgroundColor = '#047857'; // Tailwind green-700
+
+	// 4. חשוב: יש לוודא שצבע הכיתוב הוא לבן
+	btnP1.style.color = '#ffffff'; 
+	btnP2.style.color = '#ffffff';
 
     const scoreDisplay = document.getElementById('modal-score-display');
     scoreDisplay.innerHTML = `
