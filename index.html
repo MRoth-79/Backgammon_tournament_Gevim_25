@@ -223,11 +223,12 @@ button:hover {
     background-color: #06b6d4; /* טורקיז בהובר */
 }
 .player-slot-winner {
-    background: linear-gradient(90deg, #FBBF24, #f59e0b); /* Gold to Darker Gold */
-    color: #1f2937;
+    /* צבע ירוק חזק (Emerald/Green-700) */
+    background: linear-gradient(90deg, #10B981, #059669); 
+    color: #0F172A; /* טקסט כהה על רקע בהיר */
     font-weight: 900;
-    transform: none; /* ביטול סקייל כדי לשמור על יישור */
-    border: 3px solid #f59e0b;
+    transform: none; 
+    border: 3px solid #059669; /* בורדר ירוק כהה */
 }
 .player-slot-loser {
     background-color: #ef4444; /* אדום */
@@ -261,9 +262,10 @@ button:hover {
     100% { transform: scale(1); box-shadow: 0 15px 30px rgba(245, 158, 11, 0.8); }
 }
 
-/* כפתורי המודאל */
+/* כפתורי המודאל - צבע ניצחון ירוק */
 #btn-p1-win, #btn-p2-win {
-    background: linear-gradient(90deg, #3b82f6, #06b6d4); /* Blue-Cyan Gradient */
+    /* מעבר צבע ירוק (Green-600 ל-Green-700) */
+    background: linear-gradient(90deg, #059669, #047857); 
     color: white;
 }
 
