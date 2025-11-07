@@ -343,7 +343,7 @@ button:hover {
     <!-- עדכון ל-16 שחקנים -->
     <h2 class="text-3xl font-bold text-amber-300 mb-5 border-b border-amber-300/30 pb-3 flex items-center gap-3">
         <span class="text-4xl">👥</span>
-        רשימת המזליסטים (<span id="team-count">0</span>/16)
+        רשימת המזליסטים (<span id="team-count">0</span>)
     </h2>
 	
 	<form id="add-team-form" class="flex gap-4 mb-4">
@@ -413,7 +413,7 @@ button:hover {
 // --- הגדרות גלובליות ---
 const STORAGE_KEY = 'backgammon_tournament_16_players_v2';
 const WINS_TO_WIN_MATCH = 3; // הראשון ל-3 ניצחונות משחק (הטוב מ-5)
-const MAX_PLAYERS = 16; // *** עדכון ל-16 שחקנים ***
+const MAX_PLAYERS = 32; // *** עדכון ל32 שחקנים ***
 // גובה כרטיס משחק (80px) + מרווח תחתון (mb-4 = 16px).
 // זהו הגובה הלוגי של 'שורה אחת' בטורניר.
 const MATCH_HEIGHT_UNIT = 80 + 16; // 96px 
@@ -456,12 +456,14 @@ const initialTournamentData = {
     teams: [], 
     status: 'registration', // 'registration', 'in_progress', 'finished'
     matches: {
+		preliminaryRound: [], // <-- נוסף: סיבוב מוקדמות
         roundOf16: [], // שמינית גמר - 8 משחקים
         quarterfinals: [], // רבע גמר - 4 משחקים
         semifinals: [], // חצי גמר - 2 משחקים
         final: [] // גמר - 1 משחק
     },
-    winner: null,
+    playersWithBye: [],     // <-- נוסף: שחקנים שעלו אוטומטית
+	winner: null,
     showChampionModal: false 
 };
 
@@ -601,13 +603,31 @@ function renderTournament(data) {
     }
 
     // 2. ניהול מצב ההרשמה וכפתור ה'התחל טורניר'
-    const teamCount = teams.length;
-    const hasAvailableNicknames = getAvailableNickname(teams) !== null || teamCount === MAX_PLAYERS;
+	const teamCount = teams.length;
     
-    addTeamButton.disabled = tournamentData.status !== 'registration' || teamCount >= MAX_PLAYERS || teamNameInput.value.trim() === '' || !hasAvailableNicknames;
-    
-    startTournamentButton.disabled = tournamentData.status !== 'registration' || teamCount !== MAX_PLAYERS;
-    startTournamentButton.textContent = teamCount === MAX_PLAYERS ? '🚀 התחל טורניר! יאללה בלאגן' : `צריך עוד ${MAX_PLAYERS - teamCount} שחקנים`;
+    // --- שינוי לוגיקת הכפתורים ---
+    // (הערה: MAX_PLAYERS הוא עכשיו 32)
+    const hasAvailableNicknames = getAvailableNickname(teams) !== null || teamCount === MAX_PLAYERS;
+
+    addTeamButton.disabled = tournamentData.status !== 'registration' || teamCount >= MAX_PLAYERS || teamNameInput.value.trim() === '' || !hasAvailableNicknames;
+    
+    // לוגיקה חדשה לכפתור "התחל"
+    if (tournamentData.status === 'registration') {
+        if (teamCount === 16) {
+            startTournamentButton.disabled = false;
+            startTournamentButton.textContent = '🚀 התחל טורניר! (16 שחקנים)';
+        } else if (teamCount > 16 && teamCount <= MAX_PLAYERS) {
+            startTournamentButton.disabled = false;
+            startTournamentButton.textContent = `🚀 התחל סיבוב מוקדמות (${teamCount} שחקנים)`;
+        } else {
+            startTournamentButton.disabled = true;
+            // (הערה: MAX_PLAYERS הוא 32, אבל המטרה היא 16)
+            startTournamentButton.textContent = `צריך 16 (או 17-32 למוקדמות)`;
+        }
+    } else {
+        // אם הטורניר כבר רץ, בטל את הכפתור
+        startTournamentButton.disabled = true; 
+    }
 
     if (status === 'registration') {
         registrationSection.classList.remove('hidden');
@@ -625,7 +645,13 @@ function renderTournament(data) {
 function renderSplitBracket(matches, tournamentWinner, showChampionModal) {
     bracketElement.innerHTML = '';
 
-    if (tournamentWinner && showChampionModal) {
+    // --- הוספה: בדיקת סטטוס מוקדמות ---
+    if (tournamentData.status === 'preliminary_round') {
+        renderPreliminaryView(); // קרא לפונקציית רינדור חדשה
+        return; // צא מהפונקציה, אל תמשיך לרינדור הרגיל
+    }
+	
+	if (tournamentWinner && showChampionModal) {
         championCard.innerHTML = `
             <div class="flex flex-col items-center space-y-4">
                 <span class="text-8xl">👑</span>
@@ -771,6 +797,78 @@ function renderSplitBracket(matches, tournamentWinner, showChampionModal) {
     });
 }
 
+/**
+ * פונקציה חדשה: מרנדרת את התצוגה של סיבוב המוקדמות.
+ * מציגה מי עלה אוטומטית, ומי משחק.
+ */
+function renderPreliminaryView() {
+    bracketElement.innerHTML = ''; // נקה
+
+    // 1. כותרת ראשית לסיבוב
+    const header = document.createElement('h2');
+    header.className = "text-4xl font-black text-amber-400 mb-8 text-center border-b border-amber-400/30 pb-4";
+    header.textContent = "שלב המוקדמות (מ-24 ל-16)";
+    bracketElement.appendChild(header);
+
+    // 2. הצג את רשימת העולים אוטומטית (Bye)
+    const byeContainer = document.createElement('div');
+    byeContainer.className = "mb-8 p-6 bg-slate-800 rounded-2xl shadow-lg border border-cyan-500/30";
+    let byeHtml = `<h3 class="text-3xl font-bold text-cyan-300 mb-4">✅ עלו אוטומטית ל-16 הגדולים (Bye)</h3><div class="flex flex-wrap gap-3">`;
+    tournamentData.playersWithBye.forEach(player => {
+        byeHtml += `<span class="bg-cyan-900 text-cyan-200 text-lg font-semibold px-4 py-2 rounded-full">${player.nickname} (${player.name})</span>`;
+    });
+    byeHtml += `</div>`;
+    byeContainer.innerHTML = byeHtml;
+    bracketElement.appendChild(byeContainer);
+
+    // 3. הצג את משחקי המוקדמות
+    const prelimContainer = document.createElement('div');
+    prelimContainer.className = "mb-8 p-6 bg-slate-800 rounded-2xl shadow-lg border border-red-500/30";
+    let prelimHtml = `<h3 class="text-3xl font-bold text-red-400 mb-4">⚔️ משחקי מוקדמות (מי שמפסיד הולך הביתה)</h3>`;
+    prelimContainer.innerHTML = prelimHtml;
+    
+    const matchesContainer = document.createElement('div');
+    matchesContainer.className = "flex flex-wrap gap-4 justify-center";
+
+    // שימוש חוזר בפונקציה הקיימת שלך ליצירת כרטיס משחק
+    tournamentData.matches.preliminaryRound.forEach(match => {
+        const matchCard = document.createElement('div');
+        matchCard.className = "match-card mb-4 rounded-xl flex flex-col justify-center"; // שימוש בקלאס הקיים
+        
+        const p1Slot = createPlayerSlot(match, match.player1, match.gameWins1, true);
+        const p2Slot = createPlayerSlot(match, match.player2, match.gameWins2, false);
+        
+        matchCard.appendChild(p1Slot);
+        matchCard.appendChild(p2Slot);
+        matchesContainer.appendChild(matchCard);
+    });
+    
+    prelimContainer.appendChild(matchesContainer);
+    bracketElement.appendChild(prelimContainer);
+
+    // 4. הוסף כפתור להתחלת הטורניר הראשי
+    const allPrelimDone = tournamentData.matches.preliminaryRound.every(m => m.winnerId !== null);
+    
+    const startMainBtn = document.createElement('button');
+    startMainBtn.id = "start-main-tournament";
+    startMainBtn.type = "button";
+    startMainBtn.className = "bg-green-600 text-white px-8 py-4 rounded-xl font-extrabold text-xl hover:bg-green-700 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed mx-auto block mt-8";
+    startMainBtn.textContent = "התחל את טורניר 16 הגדולים";
+    startMainBtn.onclick = attemptStartMainTournament;
+    
+    if (!allPrelimDone) {
+        startMainBtn.disabled = true;
+        startMainBtn.title = "יש לסיים את כל משחקי המוקדמות תחילה";
+        
+        const helperText = document.createElement('p');
+        helperText.className = "text-center text-yellow-400 text-lg mt-4";
+        helperText.textContent = "יש לסיים את כל משחקי המוקדמות (ללחוץ על המנצחים) לפני שניתן יהיה להתחיל את הטורניר הראשי.";
+        bracketElement.appendChild(helperText);
+    }
+    
+    bracketElement.appendChild(startMainBtn);
+}
+
 function createPlayerSlot(match, player, gameWins, isPlayer1) {
     const slotEl = document.createElement('div');
     slotEl.className = 'player-slot relative';
@@ -871,85 +969,182 @@ teamNameInput.addEventListener('input', () => {
 });
 
 
-function generateBracket() {
-    const players = shuffle([...tournamentData.teams]); 
-    const matches = {
-        roundOf16: [], quarterfinals: [], semifinals: [], final: []
-    };
+// *** שים לב לשינוי השם ול- (players) ***
+function generateMainBracket(players) { 
+    // מחקנו את: const players = shuffle([...tournamentData.teams]);
+    const matches = {
+        // ודא שאתה מאפס את כל המערך לפני בניית הטורניר הראשי
+        preliminaryRound: tournamentData.matches.preliminaryRound, // שמור את תוצאות המוקדמות
+        roundOf16: [], 
+        quarterfinals: [], 
+        semifinals: [], 
+        final: []
+    };
 
-    if (players.length !== MAX_PLAYERS) {
-        showRegistrationAlert(`שגיאה: נדרשים ${MAX_PLAYERS} שחקנים כדי להתחיל את הטורניר. רשומים רק ${players.length}.`, 'error');
-        return;
+    // כאן צריך 16 בדיוק
+    if (players.length !== 16) { 
+        showRegistrationAlert(`שגיאה פנימית: הטורניר הראשי חייב להתחיל עם 16 שחקנים. התקבלו: ${players.length}.`, 'error');
+        return;
+    }
+
+   // 1. שמינית גמר (Round of 16 - 8 matches)
+    for (let i = 0; i < 8; i++) {
+        matches.roundOf16.push({
+            id: `r1m${i + 1}`,
+            player1: players[i * 2],
+            player2: players[i * 2 + 1],
+            gameWins1: 0,
+            gameWins2: 0,
+            winnerId: null,
+            nextMatchId: `r2m${Math.floor(i / 2) + 1}`, 
+            nextPlayerSlot: (i % 2) === 0 ? 1 : 2, 
+            status: 'active'
+        });
+    }
+
+    // 2. רבע גמר (Quarterfinals - 4 matches)
+    for (let i = 0; i < 4; i++) {
+        matches.quarterfinals.push({
+            id: `r2m${i + 1}`,
+            player1: null, 
+            player2: null, 
+            gameWins1: 0,
+            gameWins2: 0,
+            winnerId: null,
+            nextMatchId: `r3m${Math.floor(i / 2) + 1}`,
+            nextPlayerSlot: (i % 2) === 0 ? 1 : 2,
+            status: 'pending'
+        });
+    }
+
+    // 3. חצי גמר (Semifinals - 2 matches)
+    for (let i = 0; i < 2; i++) {
+        matches.semifinals.push({
+            id: `r3m${i + 1}`,
+            player1: null, 
+            player2: null, 
+            gameWins1: 0,
+            gameWins2: 0,
+            winnerId: null,
+            nextMatchId: `r4m1`,
+            nextPlayerSlot: i + 1, 
+            status: 'pending'
+        });
+    }
+
+    // 4. גמר (Final - 1 match)
+    matches.final.push({
+        id: `r4m1`,
+        player1: null, 
+        player2: null, 
+        gameWins1: 0,
+        gameWins2: 0,
+        winnerId: null,
+        nextMatchId: null, 
+        nextPlayerSlot: null,
+        status: 'pending'
+    });
+    
+    // הגדרת מצב הטורניר ושמירה
+    tournamentData.matches = matches;
+    tournamentData.status = 'in_progress'; // <-- שינוי למצב הרגיל
+    tournamentData.winner = null;
+    tournamentData.showChampionModal = false;
+    // אל תעשה כאן saveTournamentState, הפונקציה שקוראת לזה תעשה
+}
+
+/**
+ * פונקציית "נתב" שמופעלת בלחיצה על "התחל טורניר"
+ * ומחליטה אם להתחיל מוקדמות או טורניר רגיל.
+ */
+function startTournamentRouter() {
+    const totalPlayers = tournamentData.teams.length;
+    const shuffledPlayers = shuffle([...tournamentData.teams]);
+
+    if (totalPlayers === 16) {
+        // התחל טורניר רגיל
+        generateMainBracket(shuffledPlayers);
+        tournamentData.status = 'in_progress';
+
+    } else if (totalPlayers > 16 && totalPlayers <= MAX_PLAYERS) {
+        // התחל סיבוב מוקדמות
+        generatePreliminaryRound(shuffledPlayers);
+        tournamentData.status = 'preliminary_round';
     }
+    
+    saveTournamentState();
+}
 
 
-    // 1. שמינית גמר (Round of 16 - 8 matches)
-    for (let i = 0; i < 8; i++) {
-        matches.roundOf16.push({
-            id: `r1m${i + 1}`,
-            player1: players[i * 2],
-            player2: players[i * 2 + 1],
+/**
+ * יוצר את סיבוב המוקדמות עבור N שחקנים (כאשר N > 16)
+ * כדי להגיע ל-16 שחקנים.
+ */
+function generatePreliminaryRound(allPlayers) {
+    const total = allPlayers.length; // למשל 24
+    const target = 16;
+    
+    const matchesInPrelim = total - target; // 24 - 16 = 8 משחקים
+    const playersInPrelim = matchesInPrelim * 2; // 8 * 2 = 16 שחקנים
+    const playersWithByeCount = total - playersInPrelim; // 24 - 16 = 8 שחקנים
+
+    // השחקנים הראשונים ברשימה המעורבבת מקבלים "ביי"
+    tournamentData.playersWithBye = allPlayers.slice(0, playersWithByeCount);
+    
+    // השאר הולכים לשחק
+    const playersToPlay = allPlayers.slice(playersWithByeCount);
+
+    tournamentData.matches.preliminaryRound = [];
+    for (let i = 0; i < matchesInPrelim; i++) {
+        tournamentData.matches.preliminaryRound.push({
+            id: `p1m${i + 1}`, // p = preliminary
+            player1: playersToPlay[i * 2],
+            player2: playersToPlay[i * 2 + 1],
             gameWins1: 0,
             gameWins2: 0,
             winnerId: null,
-            // r1m1, r1m2 -> r2m1 | r1m3, r1m4 -> r2m2 | r1m5, r1m6 -> r2m3 | r1m7, r1m8 -> r2m4
-            nextMatchId: `r2m${Math.floor(i / 2) + 1}`, 
-            nextPlayerSlot: (i % 2) === 0 ? 1 : 2, // 1st match feeds slot 1, 2nd feeds slot 2
+            nextMatchId: null, // לא מוביל אוטומטית לשום מקום
+            nextPlayerSlot: null,
             status: 'active'
         });
     }
-
-    // 2. רבע גמר (Quarterfinals - 4 matches)
-    for (let i = 0; i < 4; i++) {
-        matches.quarterfinals.push({
-            id: `r2m${i + 1}`,
-            player1: null, // Filled by R16 winners
-            player2: null, // Filled by R16 winners
-            gameWins1: 0,
-            gameWins2: 0,
-            winnerId: null,
-            // r2m1, r2m2 -> r3m1 | r2m3, r2m4 -> r3m2
-            nextMatchId: `r3m${Math.floor(i / 2) + 1}`,
-            nextPlayerSlot: (i % 2) === 0 ? 1 : 2,
-            status: 'pending'
-        });
-    }
-
-    // 3. חצי גמר (Semifinals - 2 matches)
-    for (let i = 0; i < 2; i++) {
-        matches.semifinals.push({
-            id: `r3m${i + 1}`,
-            player1: null, // Filled by QF winners
-            player2: null, // Filled by QF winners
-            gameWins1: 0,
-            gameWins2: 0,
-            winnerId: null,
-            // r3m1, r3m2 -> r4m1 (The Final)
-            nextMatchId: `r4m1`,
-            nextPlayerSlot: i + 1, // r3m1 feeds slot 1, r3m2 feeds slot 2
-            status: 'pending'
-        });
-    }
-
-    // 4. גמר (Final - 1 match)
-    matches.final.push({
-        id: `r4m1`,
-        player1: null, // Filled by SF winners
-        player2: null, // Filled by SF winners
-        gameWins1: 0,
-        gameWins2: 0,
-        winnerId: null,
-        nextMatchId: null, // Last match
-        nextPlayerSlot: null,
-        status: 'pending'
-    });
     
-    // הגדרת מצב הטורניר ושמירה
-    tournamentData.matches = matches;
-    tournamentData.status = 'in_progress';
+    // אפס את שאר הטורניר למקרה שזה איפוס
+    tournamentData.matches.roundOf16 = [];
+    tournamentData.matches.quarterfinals = [];
+    tournamentData.matches.semifinals = [];
+    tournamentData.matches.final = [];
     tournamentData.winner = null;
-    tournamentData.showChampionModal = false;
-    showRegistrationAlert('🚀 הטורניר החל! בהצלחה לרוב המשתתפים.', 'info');
+}
+
+/**
+ * מופעלת בסיום המוקדמות. אוספת את המנצחים + "ביי"
+ * ויוצרת את הטורניר הראשי של 16.
+ */
+function attemptStartMainTournament() {
+    // 1. בדוק שכל משחקי המוקדמות הסתיימו
+    const allPrelimDone = tournamentData.matches.preliminaryRound.every(m => m.winnerId !== null);
+    if (!allPrelimDone) {
+        showRegistrationAlert("יש לסיים את כל משחקי המוקדמות לפני שניתן להתחיל!", "error");
+        return;
+    }
+
+    // 2. אסוף את המנצחים מהמוקדמות
+    const prelimWinners = tournamentData.matches.preliminaryRound.map(match => {
+        return match.winnerId === match.player1.id ? match.player1 : match.player2;
+    });
+
+    // 3. שלב אותם עם שחקני ה-Bye
+    const mainBracketPlayers = [...tournamentData.playersWithBye, ...prelimWinners];
+    
+    // 4. ערבב אותם שוב
+    const shuffledMainPlayers = shuffle(mainBracketPlayers);
+
+    // 5. קרא לפונקציית הטורניר המקורית שלך
+    generateMainBracket(shuffledMainPlayers);
+    
+    // 6. עדכן את סטטוס הטורניר
+    tournamentData.status = 'in_progress';
     saveTournamentState();
 }
 
@@ -1039,34 +1234,51 @@ window.handleGameWin = (matchId, winnerPlayerNumber) => {
 
 // קידום המנצח למשחק הבא
 function advanceWinner(currentMatch, winnerPlayer) {
-    if (!currentMatch.nextMatchId) {
-        // הטורניר הסתיים!
-        tournamentData.status = 'finished';
-        tournamentData.winner = winnerPlayer;
-        tournamentData.showChampionModal = true;
-        saveTournamentState();
-        return;
+    
+    // --- התיקון ---
+    // 1. בדוק אם אנחנו בסיבוב מוקדמות
+    if (tournamentData.status === 'preliminary_round') {
+        // אם כן, אל תעשה כלום.
+        // הפונקציה handleGameWin כבר שמרה את המנצח,
+        // ו-saveTournamentState() (שנקראת ב-handleGameWin) ירנדר מחדש
+        // את מסך המוקדמות עם המנצח המעודכן.
+        // אנחנו לא רוצים לקדם אותו לשום מקום או לסיים את הטורניר.
+        return; 
     }
+    // --- סוף התיקון ---
 
-    const { match: nextMatch } = findMatch(currentMatch.nextMatchId);
+    // 2. בדוק אם זה משחק הגמר (הלוגיקה הישנה הייתה !currentMatch.nextMatchId)
+    if (currentMatch.id === 'r4m1' || !currentMatch.nextMatchId) {
+        // הטורניר הסתיים!
+        tournamentData.status = 'finished';
+        tournamentData.winner = winnerPlayer;
+        tournamentData.showChampionModal = true;
+        // כאן אנחנו כן רוצים שמירה מיידית כדי להציג את מודאל הניצחון
+        saveTournamentState(); 
+        return;
+    }
 
-    if (nextMatch) {
-        if (currentMatch.nextPlayerSlot === 1) {
-            nextMatch.player1 = winnerPlayer;
-        } else {
-            nextMatch.player2 = winnerPlayer;
-        }
-        // אם שני הסלוטים מלאים, המשחק הופך לפעיל
-        if (nextMatch.player1 && nextMatch.player2) {
-            nextMatch.status = 'active';
-        }
-    }
+    // 3. אם זה משחק רגיל בטורניר (לא גמר ולא מוקדמות), קדם אותו
+    const { match: nextMatch } = findMatch(currentMatch.nextMatchId);
 
-    saveTournamentState();
+    if (nextMatch) {
+        if (currentMatch.nextPlayerSlot === 1) {
+            nextMatch.player1 = winnerPlayer;
+        } else {
+            nextMatch.player2 = winnerPlayer;
+        }
+        // אם שני הסלוטים מלאים, המשחק הופך לפעיל
+        if (nextMatch.player1 && nextMatch.player2) {
+            nextMatch.status = 'active';
+        }
+    }
+    
+    // אין צורך ב-saveTournamentState() כאן,
+    // כי הפונקציה שקראה לזה (handleGameWin) תעשה את זה בכל מקרה.
 }
 
 // קריאה לפונקציית יצירת המבנה בלחיצה על 'התחל'
-document.getElementById('start-tournament').addEventListener('click', generateBracket);
+document.getElementById('start-tournament').addEventListener('click', startTournamentRouter);
 
 // אתחול האפליקציה בטעינת הדף
 initializeApp();
