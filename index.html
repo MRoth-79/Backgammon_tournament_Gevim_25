@@ -808,7 +808,7 @@ function renderSplitBracket(matches, tournamentWinner, showChampionModal) {
 
                     <p class="text-xl font-extrabold text-yellow-300 mb-1">📢 הודעת שידור חי!!!</p>
 
-                    החל מרבע גמר כל המשחקים יעברו בשידור חי ב"צריכים משהו גבים"
+                    החל מרבע גמר (1/4) כל המשחקים יעברו בשידור חי ב"צריכים משהו גבים"
 
                 `;
 
@@ -837,15 +837,41 @@ function renderPreliminaryView() {
     // 2. הצג את רשימת העולים אוטומטית (Bye)
     const byeContainer = document.createElement('div');
     byeContainer.className = "mb-8 p-6 bg-slate-800 rounded-2xl shadow-lg border border-cyan-500/30";
-    let byeHtml = `<h3 class="text-3xl font-bold text-cyan-300 mb-4">✅ עלו אוטומטית ל-16 הגדולים (Bye)</h3><div class="flex flex-wrap gap-3">`;
+    let byeHtml = `<h3 class="text-3xl font-bold text-cyan-300 mb-4">✅ עלו אוטומטית ל-16 הגדולים (יותר מזל משכל)</h3><div class="flex flex-wrap gap-3">`;
     tournamentData.playersWithBye.forEach(player => {
         byeHtml += `<span class="bg-cyan-900 text-cyan-200 text-lg font-semibold px-4 py-2 rounded-full">${player.nickname} (${player.name})</span>`;
     });
     byeHtml += `</div>`;
     byeContainer.innerHTML = byeHtml;
     bracketElement.appendChild(byeContainer);
+    
+    // 3. הוסף כפתור להתחלת הטורניר הראשי
+    const allPrelimDone = tournamentData.matches.preliminaryRound.every(m => m.winnerId !== null);
+    
+    const startMainBtn = document.createElement('button');
+    startMainBtn.id = "start-main-tournament";
+    startMainBtn.type = "button";
+    // שיניתי את העיצוב כדי שיתאים לרוחב מלא בתוך התיבה
+    startMainBtn.className = "bg-green-600 text-white px-8 py-4 rounded-xl font-extrabold text-xl hover:bg-green-700 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed w-full mt-6";
+    startMainBtn.textContent = "התחל את טורניר 16 הגדולים";
+    startMainBtn.onclick = attemptStartMainTournament;
+    
+    // הוספת הכפתור לתיבה של "עלו אוטומטית"
+    byeContainer.appendChild(startMainBtn);
 
-    // 3. הצג את משחקי המוקדמות
+    if (!allPrelimDone) {
+        startMainBtn.disabled = true;
+        startMainBtn.title = "יש לסיים את כל משחקי המוקדמות תחילה";
+        
+        const helperText = document.createElement('p');
+        helperText.className = "text-center text-yellow-400 text-lg mt-4";
+        helperText.textContent = "יש לסיים את כל משחקי המוקדמות לפני שניתן יהיה להתחיל את הטורניר הראשי.";
+        
+        // הוספת טקסט העזרה גם כן לתיבה
+        byeContainer.appendChild(helperText);
+    }
+
+    // 4. הצג את משחקי המוקדמות
     const prelimContainer = document.createElement('div');
     prelimContainer.className = "mb-8 p-6 bg-slate-800 rounded-2xl shadow-lg border border-red-500/30";
     let prelimHtml = `<h3 class="text-3xl font-bold text-red-400 mb-4">⚔️ משחקי מוקדמות (מי שמפסיד הולך הביתה)</h3>`;
@@ -870,27 +896,6 @@ function renderPreliminaryView() {
     prelimContainer.appendChild(matchesContainer);
     bracketElement.appendChild(prelimContainer);
 
-    // 4. הוסף כפתור להתחלת הטורניר הראשי
-    const allPrelimDone = tournamentData.matches.preliminaryRound.every(m => m.winnerId !== null);
-    
-    const startMainBtn = document.createElement('button');
-    startMainBtn.id = "start-main-tournament";
-    startMainBtn.type = "button";
-    startMainBtn.className = "bg-green-600 text-white px-8 py-4 rounded-xl font-extrabold text-xl hover:bg-green-700 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed mx-auto block mt-8";
-    startMainBtn.textContent = "התחל את טורניר 16 הגדולים";
-    startMainBtn.onclick = attemptStartMainTournament;
-    
-    if (!allPrelimDone) {
-        startMainBtn.disabled = true;
-        startMainBtn.title = "יש לסיים את כל משחקי המוקדמות תחילה";
-        
-        const helperText = document.createElement('p');
-        helperText.className = "text-center text-yellow-400 text-lg mt-4";
-        helperText.textContent = "יש לסיים את כל משחקי המוקדמות (ללחוץ על המנצחים) לפני שניתן יהיה להתחיל את הטורניר הראשי.";
-        bracketElement.appendChild(helperText);
-    }
-    
-    bracketElement.appendChild(startMainBtn);
 }
 
 function createPlayerSlot(match, player, gameWins, isPlayer1) {
