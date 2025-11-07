@@ -368,33 +368,47 @@ button:hover {
 
 <!-- מודאל לעדכון תוצאות - הטוב מ-5 -->
 <div id="result-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50 p-4">
-    <div class="bg-slate-800 p-8 rounded-3xl w-full max-w-lg shadow-2xl border-4 border-amber-500 animate-in zoom-in duration-300">
-        <h3 id="modal-title" class="text-3xl font-black text-amber-400 mb-6 text-center border-b border-amber-400/30 pb-3">עדכון תוצאת משחק</h3>
-        
-        <div id="modal-score-display" class="text-4xl text-center mb-6 font-extrabold text-cyan-300 bg-slate-700 p-4 rounded-xl border border-cyan-400 shadow-lg"></div>
-        
-        <input type="hidden" id="match-id" />
+    <div class="bg-slate-800 p-8 rounded-3xl w-full max-w-lg shadow-2xl border-4 border-amber-500 animate-in zoom-in duration-300">
+        <h3 id="modal-title" class="text-3xl font-black text-amber-400 mb-6 text-center border-b border-amber-400/30 pb-3">עדכון תוצאת משחק</h3>
+        
+                <div id="modal-score-display" class="text-4xl text-center mb-6 font-extrabold text-cyan-300 bg-slate-700 p-4 rounded-xl border border-cyan-400 shadow-lg"></div>
+        
+        <input type="hidden" id="match-id" />
 
-        <p class="text-xl text-center font-semibold text-white mb-6">מי ניצח במשחק הבודד האחרון? (שש-בש)</p>
+                <div id="modal-step-1-players" class="space-y-4">
+            <p class="text-xl text-center font-semibold text-white mb-6">מי ניצח במשחק הבודד האחרון?</p>
+            
+                        <button type="button" id="btn-p1-win" onclick="window.showScoreStep(1)" class="w-full p-5 rounded-2xl text-white font-black transition duration-150 flex justify-between items-center text-2xl shadow-xl hover:shadow-green-400/50 hover:bg-green-600" style="background-color: #047857; color: white;">
+                <span id="name-player1" class="text-2xl font-black"></span>
+                <span class="text-xl">ניצחון במשחק 🎯</span>
+            </button>
+            
+            <div class="text-center text-3xl font-black text-amber-500">או</div>
 
-        <div class="space-y-4">
-            <button type="button" id="btn-p1-win" onclick="window.handleGameWin(document.getElementById('match-id').value, 1)" class="w-full p-5 rounded-2xl text-white font-black transition duration-150 flex justify-between items-center text-2xl shadow-xl hover:shadow-cyan-400/50">
-                <span id="name-player1" class="text-2xl font-black"></span>
-                <span class="text-xl">ניצחון במשחק 🎯</span>
-            </button>
-            
-            <div class="text-center text-3xl font-black text-amber-500">או</div>
+                        <button type="button" id="btn-p2-win" onclick="window.showScoreStep(2)" class="w-full p-5 rounded-2xl text-white font-black transition duration-150 flex justify-between items-center text-2xl shadow-xl hover:shadow-green-400/50 hover:bg-green-600" style="background-color: #047857; color: white;">
+                <span id="name-player2" class="text-2xl font-black"></span>
+                <span class="text-xl">ניצחון במשחק 🎯</span>
+            </button>
+        </div>
 
-            <button type="button" id="btn-p2-win" onclick="window.handleGameWin(document.getElementById('match-id').value, 2)" class="w-full p-5 rounded-2xl text-white font-black transition duration-150 flex justify-between items-center text-2xl shadow-xl hover:shadow-cyan-400/50">
-                <span id="name-player2" class="text-2xl font-black"></span>
-                <span class="text-xl">ניצחון במשחק 🎯</span>
-            </button>
-        </div>
+                <div id="modal-step-2-score" class="space-y-4 hidden">
+            <p class="text-xl text-center font-semibold text-white mb-6">איך הניצחון הושג?</p>
+            
+                        <button type="button" id="btn-win-1pt" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white p-4 rounded-xl font-bold text-lg">
+                ניצחון רגיל (1 נקודה)
+            </button>
+            <button type="button" id="btn-win-2pt" class="w-full bg-amber-500 hover:bg-amber-600 text-white p-4 rounded-xl font-bold text-lg">
+                מארס (2 נקודות)
+            </button>
+            <button type="button" id="btn-win-3pt" class="w-full bg-red-600 hover:bg-red-700 text-white p-4 rounded-xl font-bold text-lg">
+                מארס טורקי (3 נקודות)
+            </button>
+        </div>
 
-        <div class="flex justify-center pt-8">
-            <button type="button" onclick="window.closeModal()" class="bg-gray-700 hover:bg-gray-600 p-4 rounded-xl text-white font-semibold transition duration-150 text-xl shadow-md">סגור / חזור ללוח</button>
-        </div>
-    </div>
+                <div class="flex justify-center pt-8">
+            <button type="button" onclick="window.closeModal()" class="bg-gray-700 hover:bg-gray-600 p-4 rounded-xl text-white font-semibold transition duration-150 text-xl shadow-md">סגור / בטל</button>
+        </div>
+    </div>
 </div>
 
 <!-- הודעת סימון -->
@@ -1195,41 +1209,70 @@ window.openModal = (matchId) => {
         </div>
         <p class="text-sm mt-2 text-red-300 font-bold">הראשון ל-${WINS_TO_WIN_MATCH} ניצחונות משחק מנצח את המפגש!</p>
     `;
-
+	
+	document.getElementById('modal-step-1-players').classList.remove('hidden');
+    document.getElementById('modal-step-2-score').classList.add('hidden');
     resultModal.classList.remove('hidden');
 };
 
+// מופעלת משלב 1, מכינה את שלב 2
+window.showScoreStep = (winnerPlayerNumber) => {
+    // 1. קח את ה-ID של המשחק מהשדה המוסתר
+    const matchId = document.getElementById('match-id').value;
+    
+    // 2. החלף בין החלונות
+    document.getElementById('modal-step-1-players').classList.add('hidden');
+    document.getElementById('modal-step-2-score').classList.remove('hidden');
+
+    // 3. הגדר את הכפתורים של שלב 2 כך שיקראו לפונקציה הנכונה
+    //    עם הניקוד המתאים
+    document.getElementById('btn-win-1pt').onclick = () => window.handleGameWin(matchId, winnerPlayerNumber, 1);
+    document.getElementById('btn-win-2pt').onclick = () => window.handleGameWin(matchId, winnerPlayerNumber, 2);
+    document.getElementById('btn-win-3pt').onclick = () => window.handleGameWin(matchId, winnerPlayerNumber, 3);
+};
+
 // טיפול בניצחון משחק בודד (העלאת ניקוד)
-window.handleGameWin = (matchId, winnerPlayerNumber) => {
-    const { match } = findMatch(matchId);
-    if (!match || match.winnerId) return;
+// טיפול בניצחון משחק בודד (העלאת ניקוד) - *** גרסה מתוקנת ***
+// טיפול בניצחון משחק בודד (העלאת ניקוד) - *** גרסה מתוקנת ***
+window.handleGameWin = (matchId, winnerPlayerNumber, pointsToAdd) => {
+    const { match } = findMatch(matchId);
+    // אם אין משחק או שכבר נגמר, עצור
+    if (!match || match.winnerId) return; 
 
-    const scoreToUpdate = winnerPlayerNumber === 1 ? 'gameWins1' : 'gameWins2';
-    match[scoreToUpdate]++;
+    const scoreToUpdate = winnerPlayerNumber === 1 ? 'gameWins1' : 'gameWins2';
+    
+    // 1. הוסף את הנקודות שהתקבלו (1, 2, או 3)
+    match[scoreToUpdate] += pointsToAdd;
 
-    // עדכון תצוגת הניקוד במודאל באופן מיידי
-    const scoreDisplay = document.getElementById('modal-score-display');
-    scoreDisplay.innerHTML = `
-        <div class="flex justify-around items-center">
-            <span class="text-xl text-amber-300 font-normal">${match.player1.name}</span>
-            <span class="text-6xl text-white font-extrabold glow-score">${match.gameWins1}</span>
-            <span class="text-4xl text-gray-400 font-bold">:</span>
-            <span class="text-6xl text-white font-extrabold glow-score">${match.gameWins2}</span>
-            <span class="text-xl text-amber-300 font-normal">${match.player2.name}</span>
-        </div>
-        <p class="text-sm mt-2 text-red-300 font-bold">הראשון ל-${WINS_TO_WIN_MATCH} ניצחונות משחק מנצח את המפגש!</p>
-    `;
+    // 2. בדיקה האם המפגש הסתיים (גדול או שווה למטרה)
+    if (match.gameWins1 >= WINS_TO_WIN_MATCH || match.gameWins2 >= WINS_TO_WIN_MATCH) {
+        
+        // 3. (תיקון הבאג) "נעל" את הניקוד על המטרה, למנוע 5-2
+        if (match.gameWins1 >= WINS_TO_WIN_MATCH) {
+            match.gameWins1 = WINS_TO_WIN_MATCH;
+            // ודא שהניקוד השני לא עבר גם הוא בטעות
+            if (match.gameWins2 >= WINS_TO_WIN_MATCH) match.gameWins2 = WINS_TO_WIN_MATCH - 1; 
+        } else if (match.gameWins2 >= WINS_TO_WIN_MATCH) {
+            match.gameWins2 = WINS_TO_WIN_MATCH;
+            if (match.gameWins1 >= WINS_TO_WIN_MATCH) match.gameWins1 = WINS_TO_WIN_MATCH - 1;
+        }
 
-    // בדיקה האם המפגש הסתיים (הטוב מ-5 / הראשון ל-3)
-    if (match.gameWins1 === WINS_TO_WIN_MATCH || match.gameWins2 === WINS_TO_WIN_MATCH) {
-        match.winnerId = match.gameWins1 === WINS_TO_WIN_MATCH ? match.player1.id : match.player2.id;
-        const winnerPlayer = match.winnerId === match.player1.id ? match.player1 : match.player2;
+        // 4. קבע את המנצח
+        match.winnerId = match.gameWins1 === WINS_TO_WIN_MATCH ? match.player1.id : match.player2.id;
+        const winnerPlayer = match.winnerId === match.player1.id ? match.player1 : match.player2;
 
-        window.closeModal();
-        advanceWinner(match, winnerPlayer);
-    }
+        
+        advanceWinner(match, winnerPlayer); // <--- זה החלק שמעלה לרבע גמר
+		window.closeModal(); // סגור את המודאל (זה גם שומר את המצב)
 
-    saveTournamentState();
+    } else {
+        // 5. אם המשחק לא נגמר, פשוט סגור את המודאל
+        //    (הניקוד יישמר אוטומטית על ידי closeModal)
+        window.closeModal();
+    }
+    
+    // הערה: אנחנו לא צריכים 'saveTournamentState()' כאן
+    // כי 'window.closeModal()' כבר קורא לזה, וזה מונע כפילות.
 };
 
 // קידום המנצח למשחק הבא
