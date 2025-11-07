@@ -302,6 +302,24 @@ button:hover {
     font-weight: bold;
 }
 
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.03); }
+}
+
+@keyframes fade-in-out {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s infinite ease-in-out;
+}
+
+.animate-fade-in-out-delay {
+  animation: fade-in-out 3s infinite ease-in-out 1s; /* מתחיל שנייה אחרי הפולס */
+}
+
 </style>
 </head>
 <body class="rtl text-right">
@@ -312,21 +330,52 @@ button:hover {
         🏆 טיול גברברי גבים: טורניר שש-בש 🎲
     </h1>
     
-    <p class="text-xl text-cyan-300 mt-2 font-semibold">
-        <span class="text-yellow-300">הפורמט הבלתי מתפשר:</span> **הטוב מ-5**! צריך 3 ניצחונות כדי לבאס את היריב. (16 לוחמים על הכיסא, אבל רק הקוביות יקבעו מי האחד שיהיה על הפודיום).
-    </p>
+<div class="mt-8 p-8 bg-slate-900/60 rounded-3xl shadow-2xl border-2 border-emerald-600/50 max-w-4xl mx-auto text-center">
 
-    <ul class="text-lg text-yellow-300 mt-4 list-disc list-inside mx-auto w-fit font-medium text-right">
-        <li class="mb-1">
-            <span class="text-cyan-300">ניצחון רגיל:</span> **1 נקודה** (השחקן שהוציא ראשון את כל אבניו).
-        </li>
-        <li class="mb-1">
-            <span class="text-cyan-300">מארס:</span> **2 נקודות** (ניצחון כשהיריב לא הוציא אף אבן).
-        </li>
-        <li class="mb-1">
-            <span class="text-cyan-300">מארס טורקי:</span> **3 נקודות** (ניצחון מארס כשלפחות אבן אחת של היריב עדיין נמצאת בבסיס שלך).
-        </li>
-    </ul>
+	<p class="text-3xl font-bold text-yellow-300">
+	    הפורמט הבלתי מתפשר: <strong class="text-white">הטוב מ-5!!!</strong>
+	</p>
+	<p class="text-xl text-cyan-200 mt-2">
+	    צריך 3 נקודות כדי לבאס את היריב.
+	</p>
+
+	<hr class="my-6 border-t-2 border-slate-700/50">
+
+	<div class="max-w-xl mx-auto space-y-4 px-4">
+
+	    <div class="flex items-start gap-4 p-4 bg-slate-800/50 rounded-xl shadow-lg border-2 border-cyan-500/30">
+	        <div class="text-right w-full">
+	            <h4 class="text-2xl font-bold text-white">ניצחון רגיל - <span class="text-cyan-400">נקודה אחת (1)</span></h4>
+	            <p class="text-lg text-slate-300">השחקן שהוציא ראשון את כל אבניו.</p>
+	        </div>
+	    </div>
+
+	    <div class="flex items-start gap-4 p-4 bg-slate-800/50 rounded-xl shadow-lg border-2 border-amber-500/30">
+	        <div class="text-right w-full">
+	            <h4 class="text-2xl font-bold text-white">מארס - <span class="text-amber-400">שתי נקודות (2)</span></h4>
+	            <p class="text-lg text-slate-300">ניצחון כשהיריב לא הוציא אף אבן.</p>
+	        </div>
+	    </div>
+
+	    <div class="flex items-start gap-4 p-4 bg-slate-800/50 rounded-xl shadow-lg border-2 border-red-500/30">
+	        <div class="text-right w-full">
+	                        <h4 class="text-2xl font-bold text-white">מארס טורקי - <span class="text-red-500">שלוש נקודות (3)</span></h4>
+	            <p class="text-lg text-slate-300">ניצחון מארס כשלפחות אבן אחת של היריב עדיין בבסיס שלך.</p>
+	        </div>
+	    </div>
+
+	</div>
+
+	<hr class="my-6 border-t-2 border-slate-700/50">
+	    
+	<p class="text-3xl font-extrabold text-lime-300 leading-tight" style="text-shadow: 0 0 15px #a3e635;">
+	חבורת לוחמים על הכיסא,
+	</p>
+	<p class="text-3xl font-extrabold text-lime-500 leading-tight" style="text-shadow: 0 0 15px #a3e635;">
+	    אבל רק הקוביות יקבעו מי האחד שיהיה על הפודיום!
+	</p>
+
+</div>
 </div>
 
 <!-- כפתורי בקרה -->
@@ -745,12 +794,19 @@ function renderSplitBracket(matches, tournamentWinner, showChampionModal) {
         
         let preTitle = '';
 
-        if (col.isFinal) {
-            // שינוי הכוכב לגביע
-            preTitle = '<div class="text-4xl text-amber-500 mb-2">🏆</div>'; 
-        }
+		if (col.isFinal) {
+            // שינוי הכוכב לגביע + הוספת אנימציה וזוהר
+            preTitle = `<div 
+                        class="text-4xl text-amber-500 mb-2 animate-pulse-slow" 
+                        style="text-shadow: 0 0 20px #f59e0b;"
+                    >
+                        🏆
+                    </div>`;
+        }
         
         // הוספת כותרת לכל טור
+		const titleSizeClass = col.isFinal ? 'text-5xl' : 'text-2xl';
+		
         roundColumn.innerHTML = `
             ${preTitle}
             <h3 class="text-2xl font-black ${col.titleColor} mb-6 text-center">${col.title}</h3>
@@ -800,15 +856,19 @@ function renderSplitBracket(matches, tournamentWinner, showChampionModal) {
 
             if (matchId === 'r4m1') {
 
-                const announcement = document.createElement('div');
+				const announcement = document.createElement('div');
 
-                announcement.className = 'mt-4 p-3 bg-red-800/70 border-4 border-red-500 rounded-xl text-white text-center font-bold text-lg shadow-2xl animate-pulse w-full';
+                announcement.className = 'mt-4 p-4 bg-red-800/70 border-4 border-red-500 rounded-xl text-white text-center font-bold shadow-2xl animate-pulse w-full';
 
                 announcement.innerHTML = `
 
                     <p class="text-xl font-extrabold text-yellow-300 mb-1">📢 הודעת שידור חי!!!</p>
 
-                    החל מרבע גמר (1/4) כל המשחקים יעברו בשידור חי ב"צריכים משהו גבים"
+                    החל מרבע גמר (1/4)
+					</p>
+					כל המשחקים יעברו בשידור חי
+					</p>
+					ב"צריכים משהו גבים"
 
                 `;
 
@@ -836,8 +896,8 @@ function renderPreliminaryView() {
 
     // 2. הצג את רשימת העולים אוטומטית (Bye)
     const byeContainer = document.createElement('div');
-    byeContainer.className = "mb-8 p-6 bg-slate-800 rounded-2xl shadow-lg border border-cyan-500/30";
-    let byeHtml = `<h3 class="text-3xl font-bold text-cyan-300 mb-4">✅ עלו אוטומטית ל-16 הגדולים (יותר מזל משכל)</h3><div class="flex flex-wrap gap-3">`;
+    byeContainer.className = "mb-8 p-6 bg-slate-800 rounded-2xl shadow-lg border border-cyan-500/30 text-center";
+    let byeHtml = `<h3 class="text-3xl font-bold text-cyan-300 mb-4">🤩 עלו אוטומטית ל-16 הגדולים (יותר מזל משכל) 🤩 </h3><div class="flex flex-wrap gap-3 ">`;
     tournamentData.playersWithBye.forEach(player => {
         byeHtml += `<span class="bg-cyan-900 text-cyan-200 text-lg font-semibold px-4 py-2 rounded-full">${player.nickname} (${player.name})</span>`;
     });
@@ -873,9 +933,12 @@ function renderPreliminaryView() {
 
     // 4. הצג את משחקי המוקדמות
     const prelimContainer = document.createElement('div');
-    prelimContainer.className = "mb-8 p-6 bg-slate-800 rounded-2xl shadow-lg border border-red-500/30";
-    let prelimHtml = `<h3 class="text-3xl font-bold text-red-400 mb-4">⚔️ משחקי מוקדמות (מי שמפסיד הולך הביתה)</h3>`;
-    prelimContainer.innerHTML = prelimHtml;
+    prelimContainer.className = "mb-8 p-6 bg-slate-800 rounded-2xl shadow-lg border border-red-500/30 text-center";
+	let prelimHtml = `
+        <h3 class="text-3xl font-bold text-red-400">⚔️ משחקי מוקדמות ⚔️</h3>
+        <p class="text-3xl font-bold text-red-400">מי שמפסיד הולך הביתה</p>
+    `;
+    prelimContainer.innerHTML = prelimHtml;
     
     const matchesContainer = document.createElement('div');
     matchesContainer.className = "flex flex-wrap gap-4 justify-center";
