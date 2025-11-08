@@ -427,10 +427,12 @@ button:hover {
 		<div class="border-t border-b border-slate-700/50 my-4 py-3 flex justify-between gap-4">
 		
                 <button type="button" id="btn-undo-p1" class="bg-red-600 hover:bg-gray-700 text-white p-2 rounded-xl text-sm font-bold shadow-lg">
-		         בטל נקודה ➖ <span id="undo-name-player1">שחקן 1</span>
+		         בטל נקודה ➖ 
+		<p><span id="undo-name-player1">שחקן 1</span>
 		    </button>
                 <button type="button" id="btn-undo-p2" class="bg-red-600 hover:bg-gray-700 text-white p-2 rounded-xl text-sm font-bold shadow-lg">
-		         בטל נקודה ➖ <span id="undo-name-player2">שחקן 2</span>
+		         בטל נקודה ➖ 
+		<p><span id="undo-name-player2">שחקן 2</span>
 		    </button>
 		</div>
 
@@ -1292,10 +1294,20 @@ window.openModal = (matchId) => {
     if (!match || match.winnerId || !match.player1 || !match.player2) return;
 
     document.getElementById('match-id').value = matchId;
-    document.getElementById('name-player1').textContent = match.player1.name;
-    document.getElementById('name-player2').textContent = match.player2.name;
-	document.getElementById('undo-name-player1').textContent = match.player1.name;
-    document.getElementById('undo-name-player2').textContent = match.player2.name;
+	const player1Html = `
+		<span class="block text-xl font-black">${match.player1.nickname}</span>
+		<span class="block text-sm font-normal text-gray-200" style="line-height: 1;">(${match.player1.name})</span>
+	`;
+	const player2Html = `
+		<span class="block text-xl font-black">${match.player2.nickname}</span>
+		<span class="block text-sm font-normal text-gray-200" style="line-height: 1;">(${match.player2.name})</span>
+	`;
+
+	// --- החלפה: שימוש ב-innerHTML במקום textContent ---
+	document.getElementById('name-player1').innerHTML = player1Html;
+	document.getElementById('name-player2').innerHTML = player2Html;
+	document.getElementById('undo-name-player1').textContent = `${match.player1.nickname} (${match.player1.name})`;
+	document.getElementById('undo-name-player2').textContent = `${match.player2.nickname} (${match.player2.name})`;
 
 	const greenClasses = 'w-full p-5 rounded-2xl text-white font-black transition duration-150 flex justify-between items-center text-2xl shadow-xl hover:shadow-green-400/50 hover:bg-green-600';
 
