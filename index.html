@@ -417,45 +417,55 @@ button:hover {
 
 <!-- מודאל לעדכון תוצאות - הטוב מ-5 -->
 <div id="result-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50 p-4">
-    <div class="bg-slate-800 p-8 rounded-3xl w-full max-w-lg shadow-2xl border-4 border-amber-500 animate-in zoom-in duration-300">
-        <h3 id="modal-title" class="text-3xl font-black text-amber-400 mb-6 text-center border-b border-amber-400/30 pb-3">עדכון תוצאת משחק</h3>
+        <div class="bg-slate-800 p-5 rounded-xl w-full max-w-[65vh] shadow-2xl border-4 border-amber-500 animate-in zoom-in duration-300 max-h-[105vh] overflow-y-auto">
+        <h3 id="modal-title" class="text-3xl font-black text-amber-400 mb-4 text-center border-b border-amber-400/30 pb-3">עדכון תוצאת משחק</h3>
         
-                <div id="modal-score-display" class="text-4xl text-center mb-6 font-extrabold text-cyan-300 bg-slate-700 p-4 rounded-xl border border-cyan-400 shadow-lg"></div>
+        <div id="modal-score-display" class="text-4xl text-center mb-4 font-extrabold text-cyan-300 bg-slate-700 p-3 rounded-xl border border-cyan-400 shadow-lg"></div>
         
         <input type="hidden" id="match-id" />
 
-                <div id="modal-step-1-players" class="space-y-4">
-            <p class="text-xl text-center font-semibold text-white mb-6">מי ניצח במשחק הבודד האחרון?</p>
+		<div class="border-t border-b border-slate-700/50 my-4 py-3 flex justify-between gap-4">
+		
+                <button type="button" id="btn-undo-p1" class="bg-red-600 hover:bg-gray-700 text-white p-2 rounded-xl text-sm font-bold shadow-lg">
+		         בטל נקודה ➖ <span id="undo-name-player1">שחקן 1</span>
+		    </button>
+                <button type="button" id="btn-undo-p2" class="bg-red-600 hover:bg-gray-700 text-white p-2 rounded-xl text-sm font-bold shadow-lg">
+		         בטל נקודה ➖ <span id="undo-name-player2">שחקן 2</span>
+		    </button>
+		</div>
+
+		        <div id="modal-step-1-players" class="space-y-3 mt-4">
+            <p class="text-lg text-center font-semibold text-white mb-3">מי ניצח במשחק הבודד האחרון?</p>
             
-                        <button type="button" id="btn-p1-win" onclick="window.showScoreStep(1)" class="w-full p-5 rounded-2xl text-white font-black transition duration-150 flex justify-between items-center text-2xl shadow-xl hover:shadow-green-400/50 hover:bg-green-600" style="background-color: #047857; color: white;">
-                <span id="name-player1" class="text-2xl font-black"></span>
-                <span class="text-xl">ניצחון במשחק 🎯</span>
+            <button type="button" id="btn-p1-win" onclick="window.showScoreStep(1)" class="w-full p-4 rounded-xl text-white font-black transition duration-150 flex justify-between items-center text-xl shadow-xl hover:shadow-green-400/50 hover:bg-green-600" style="background-color: #047857; color: white;">
+                <span id="name-player1" class="text-xl font-black"></span>
+                <span class="text-lg">ניצחון במשחק 🎯</span>
             </button>
             
-            <div class="text-center text-3xl font-black text-amber-500">או</div>
-
-                        <button type="button" id="btn-p2-win" onclick="window.showScoreStep(2)" class="w-full p-5 rounded-2xl text-white font-black transition duration-150 flex justify-between items-center text-2xl shadow-xl hover:shadow-green-400/50 hover:bg-green-600" style="background-color: #047857; color: white;">
-                <span id="name-player2" class="text-2xl font-black"></span>
-                <span class="text-xl">ניצחון במשחק 🎯</span>
+            <div class="text-center text-2xl font-black text-amber-500 my-2">או</div>
+    
+            <button type="button" id="btn-p2-win" onclick="window.showScoreStep(2)" class="w-full p-4 rounded-xl text-white font-black transition duration-150 flex justify-between items-center text-xl shadow-xl hover:shadow-green-400/50 hover:bg-green-600" style="background-color: #047857; color: white;">
+                <span id="name-player2" class="text-xl font-black"></span>
+                <span class="text-lg">ניצחון במשחק 🎯</span>
             </button>
         </div>
-
-                <div id="modal-step-2-score" class="space-y-4 hidden">
-            <p class="text-xl text-center font-semibold text-white mb-6">איך הניצחון הושג?</p>
-            
-                        <button type="button" id="btn-win-1pt" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white p-4 rounded-xl font-bold text-lg">
+    
+		        <div id="modal-step-2-score" class="space-y-3 hidden">
+            <p class="text-lg text-center font-semibold text-white mb-4">איך הניצחון הושג?</p>
+            
+            <button type="button" id="btn-win-1pt" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white p-3 rounded-xl font-bold text-lg">
                 ניצחון רגיל (1 נקודה)
             </button>
-            <button type="button" id="btn-win-2pt" class="w-full bg-amber-500 hover:bg-amber-600 text-white p-4 rounded-xl font-bold text-lg">
+            <button type="button" id="btn-win-2pt" class="w-full bg-amber-500 hover:bg-amber-600 text-white p-3 rounded-xl font-bold text-lg">
                 מארס (2 נקודות)
             </button>
-            <button type="button" id="btn-win-3pt" class="w-full bg-red-600 hover:bg-red-700 text-white p-4 rounded-xl font-bold text-lg">
+            <button type="button" id="btn-win-3pt" class="w-full bg-red-600 hover:bg-red-700 text-white p-3 rounded-xl font-bold text-lg">
                 מארס טורקי (3 נקודות)
             </button>
         </div>
-
-                <div class="flex justify-center pt-8">
-            <button type="button" onclick="window.closeModal()" class="bg-gray-700 hover:bg-gray-600 p-4 rounded-xl text-white font-semibold transition duration-150 text-xl shadow-md">סגור / בטל</button>
+    
+		        <div class="flex justify-center pt-6">
+            <button type="button" onclick="window.closeModal()" class="bg-gray-700 hover:bg-gray-600 p-3 rounded-xl text-white font-semibold transition duration-150 text-lg shadow-md">סגור / בטל</button>
         </div>
     </div>
 </div>
@@ -491,14 +501,14 @@ const FUNNY_NICKNAMES = [
     "בורח מפתיחות", "מוציא האבן השחורה", "המומחה לפסיכולוגיה של הדאבל", "צייד הפתוחים", "דוקטור 6:5",
     "מגלגל המזל", "מהנדס הבתים", "הטרוד בפנים", "אלוף הלכידות", "המסכן שמשאיר פתוח",
     "ה-6:6 שהגיע בזמן", "קונה הטורקי", "המעיף הירדני", "השחקן ה'סגור'", "המכפיל הרשמי",
-    "מנהל חשבונות פתוחים", "המזליסט הראשי", "האסטרטג של הרגע האחרון", "הנמר המרדף", "שליט המגרש",
+    "מנהל חשבונות פתוחים", "הרולר הראשי", "האסטרטג של הרגע האחרון", "הנמר המרדף", "שליט המגרש",
     "גנב הדאבלים", "המטייל לאחור", "משליח הקוביות העצבני", "המחסל השקט", "הדובדבן שבקובייה",
     "היריב המעצבן", "הפראייר של הדאבל 4", "החולם על 6 ו-5", 
     "מטיל הקוביות הלא קשורות", "המשאיר פתוחים", "מפצח המארסים", "קבלן המגדלים", "תותח הבית האחורי",
     "בזבזן 1-1", "סוגר הבסיסים", "המחלק את השש", "הלוקח את הזמן", "המרמה הקטן",
     "הבנאי הראשי", "האבן הבודדה", "ה'קוויקי' של הניצחון", "המשבית שמחות", "המחכה ל-5",
     "משכיר בניינים", "הבנקאי של הדאבלים", "השבור הטורקי", "מעביר הזמן בבר", "הלכוד מאחור",
-    "המחכה ל-6 ו-5", "אדריכל הבית", "החוסם הסדרתי", "דוקטור דאבל", "המרקד על כל החתונות",
+    "המחכה ל-6 ו-5", "אדריכל הבית", "הנועל הסדרתי", "דוקטור דאבל", "המרקד על כל החתונות",
     "מלך הפריים", "הבורח מפתיחות", "אלוף התיחמונים", "מכור ל\"פתיחות\"", "הטוחן הטורקי",
     "גנרל ה-Blockade", "הורס הבתים", "הפילוסוף של הקוביות", "התקוע על 1-1", "המתפלל לשש-שש",
     "היורש של אלברט", "הבן המועדף של נאמבר 7", "השליח של הקארמה", "מגנט לדאבלים",
@@ -611,14 +621,17 @@ function loadData() {
     }
 }
 
+function saveDataOnly() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tournamentData));
+    } catch (e) {
+        console.error("Local Storage: Error saving data (data only):", e);
+    }
+}
+
 function saveTournamentState() {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(tournamentData));
-        renderTournament(tournamentData); // רינדור מיידי לאחר שמירה
-    } catch (e) {
-        console.error("Local Storage: Error saving data:", e);
-        showRegistrationAlert("שגיאה: לא ניתן לשמור את הנתונים בדפדפן.", 'error');
-    }
+    saveDataOnly(); // 1. קודם כל שמור את הנתונים
+    renderTournament(tournamentData); // 2. אחר כך רנדר מחדש
 }
 
 // FIX: הפונקציה window.resetTournament() מופעלת ישירות מה-onclick
@@ -969,7 +982,7 @@ function createPlayerSlot(match, player, gameWins, isPlayer1) {
     const slotEl = document.createElement('div');
     slotEl.className = 'player-slot relative';
     
-    let playerName = player?.name || (match.status === 'pending' ? 'ממתין לזוכה' : '---');
+    let playerName = player?.name || (match.status === 'pending' ? 'ממתין למנצח' : '---');
     let winsDisplay = gameWins > 0 ? `(${gameWins}/${WINS_TO_WIN_MATCH})` : ''; 
     let icon = '🎲'; // אייקון קובייה לבאקגמון
 
@@ -992,7 +1005,7 @@ function createPlayerSlot(match, player, gameWins, isPlayer1) {
         displayNameHtml = playerName; // לא להציג כינוי אם ריק
     } else if (isWinner) {
         slotEl.classList.add('player-slot-winner');
-        winsDisplay = `(המנצח!)`; 
+//        winsDisplay = `(המנצח!)`; 
         icon = '👑';
     } else if (isLoser) {
         slotEl.classList.add('player-slot-loser');
@@ -1254,15 +1267,36 @@ function findMatch(matchId) {
 }
 
 // פתיחת חלון קופץ לעדכון תוצאות
+// --- פונקציה חדשה (פוצלה מ-openModal) ---
+// מרעננת את תצוגת הניקוד בתוך המודאל
+function updateModalScoreDisplay(match) {
+    const scoreDisplay = document.getElementById('modal-score-display');
+    if (!scoreDisplay) return; // בדיקת בטיחות
+    
+    scoreDisplay.innerHTML = `
+        <div class="flex justify-around items-center">
+            <span class="text-xl text-amber-300 font-normal">${match.player1.name}</span>
+            <span class="text-6xl text-white font-extrabold glow-score">${match.gameWins1}</span>
+            <span class="text-4xl text-gray-400 font-bold">:</span>
+            <span class="text-6xl text-white font-extrabold glow-score">${match.gameWins2}</span>
+            <span class="text-xl text-amber-300 font-normal">${match.player2.name}</span>
+        </div>
+        <p class="text-sm mt-2 text-red-300 font-bold">הראשון ל-${WINS_TO_WIN_MATCH} ניצחונות משחק מנצח את המפגש!</p>
+    `;
+}
+
+// פתיחת חלון קופץ לעדכון תוצאות - *** גרסה משודרגת ***
 window.openModal = (matchId) => {
-    const { match } = findMatch(matchId);
+    const { match } = findMatch(matchId);
 
-    if (!match || match.winnerId || !match.player1 || !match.player2) return;
+    if (!match || match.winnerId || !match.player1 || !match.player2) return;
 
-    document.getElementById('match-id').value = matchId;
-    document.getElementById('name-player1').textContent = match.player1.name;
-    document.getElementById('name-player2').textContent = match.player2.name;
-	
+    document.getElementById('match-id').value = matchId;
+    document.getElementById('name-player1').textContent = match.player1.name;
+    document.getElementById('name-player2').textContent = match.player2.name;
+	document.getElementById('undo-name-player1').textContent = match.player1.name;
+    document.getElementById('undo-name-player2').textContent = match.player2.name;
+
 	const greenClasses = 'w-full p-5 rounded-2xl text-white font-black transition duration-150 flex justify-between items-center text-2xl shadow-xl hover:shadow-green-400/50 hover:bg-green-600';
 
 	const btnP1 = document.getElementById('btn-p1-win');
@@ -1277,24 +1311,21 @@ window.openModal = (matchId) => {
 	btnP2.style.backgroundColor = '#047857'; // Tailwind green-700
 
 	// 4. חשוב: יש לוודא שצבע הכיתוב הוא לבן
-	btnP1.style.color = '#ffffff'; 
+	btnP1.style.color = '#ffffff'; 
 	btnP2.style.color = '#ffffff';
 
-    const scoreDisplay = document.getElementById('modal-score-display');
-    scoreDisplay.innerHTML = `
-        <div class="flex justify-around items-center">
-            <span class="text-xl text-amber-300 font-normal">${match.player1.name}</span>
-            <span class="text-6xl text-white font-extrabold glow-score">${match.gameWins1}</span>
-            <span class="text-4xl text-gray-400 font-bold">:</span>
-            <span class="text-6xl text-white font-extrabold glow-score">${match.gameWins2}</span>
-            <span class="text-xl text-amber-300 font-normal">${match.player2.name}</span>
-        </div>
-        <p class="text-sm mt-2 text-red-300 font-bold">הראשון ל-${WINS_TO_WIN_MATCH} ניצחונות משחק מנצח את המפגש!</p>
-    `;
-	
-	document.getElementById('modal-step-1-players').classList.remove('hidden');
-    document.getElementById('modal-step-2-score').classList.add('hidden');
-    resultModal.classList.remove('hidden');
+    // קריאה לפונקציית העזר החדשה שיצרנו
+    updateModalScoreDisplay(match);
+
+    // --- הוספה: הפעלת כפתורי ביטול ---
+    document.getElementById('btn-undo-p1').onclick = () => window.handleUndoScore(matchId, 1);
+    document.getElementById('btn-undo-p2').onclick = () => window.handleUndoScore(matchId, 2);
+    // --- סוף הוספה ---
+
+    document.getElementById('modal-step-1-players').classList.remove('hidden');
+    document.getElementById('modal-step-2-score').classList.add('hidden');
+    
+    resultModal.classList.remove('hidden');
 };
 
 // מופעלת משלב 1, מכינה את שלב 2
@@ -1355,6 +1386,26 @@ window.handleGameWin = (matchId, winnerPlayerNumber, pointsToAdd) => {
     
     // הערה: אנחנו לא צריכים 'saveTournamentState()' כאן
     // כי 'window.closeModal()' כבר קורא לזה, וזה מונע כפילות.
+};
+
+// טיפול בביטול/הפחתת נקודה
+window.handleUndoScore = (matchId, playerNumberToUndo) => {
+    const { match } = findMatch(matchId);
+    // אי אפשר לבטל נקודות במשחק שכבר נגמר
+    if (!match || match.winnerId) return; 
+
+    const scoreToUpdate = playerNumberToUndo === 1 ? 'gameWins1' : 'gameWins2';
+
+    // בדוק שאפשר להפחית (אי אפשר לרדת מתחת ל-0)
+    if (match[scoreToUpdate] > 0) {
+        match[scoreToUpdate]--; // הפחת נקודה
+        
+        // 1. עדכן את תצוגת הניקוד במודאל (בלי לסגור אותו)
+        updateModalScoreDisplay(match); 
+        
+        // 2. שמור את הנתונים החדשים (בלי לרענן את הדף)
+        saveDataOnly(); 
+    }
 };
 
 // קידום המנצח למשחק הבא
