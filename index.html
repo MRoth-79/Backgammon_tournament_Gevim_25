@@ -36,35 +36,7 @@ html {
     backdrop-filter: blur(5px); 
 }
 
-.match-card {
-    width: 280px; /* רוחב קבוע לכרטיס משחק */
-    min-height: 80px;
-    background-color: #334155; /* slate-700 */
-    border: 1px solid #06B6D4; /* cyan-500 */
-}
-.player-slot {
-    padding: 8px 12px;
-    border-bottom: 1px solid #475569; /* slate-600 */
-    background-color: #f1f5f9; /* רקע בהיר להדגשה */
-    color: #0f172a; /* slate-900 */
-    line-height: 1.2;
-}
-.player-slot:last-child {
-    border-bottom: none;
-}
-/* 2. עיצובי ניצחון והפסד */
-.player-slot-winner {
-    background: #10B981; /* emerald-500 - ירוק מנצח */
-    color: #0F172A; /* Slate-900 */
-    font-weight: 700;
-    box-shadow: 0 0 10px #10B981;
-}
-.player-slot-loser {
-    background: #64748B; /* slate-500 - אפור מפסיד */
-    color: #E2E8F0; /* Slate-200 */
-    text-decoration: line-through;
-    opacity: 0.8;
-}
+
 /* 3. אפקטי זוהר - שיפור נראות */
 .header-glow-text {
     text-shadow: 0 0 10px #FBBE24, 0 0 20px #F59E0B;
@@ -143,7 +115,8 @@ button:hover {
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
     padding: 0; /* ננהל את הריפוד בפנים */
     /* גובה אחיד לכל כרטיס (כולל פדינג פנימי + בורדרים) כדי לאפשר חישובים מדויקים ב-JS */
-    height: 80px; /* גובה מותאם לשני ה-player-slot-ים */
+    height: 90px; 
+    position: relative; /* גובה מותאם לשני ה-player-slot-ים */
 }
 .player-slot {
     /* נגדיר גובה מדויק לכל סלוט */
@@ -187,7 +160,7 @@ button:hover {
     /* ביטול סקייל דינמי כדי לשמור על יישור מדויק */
     transform: none; 
     box-shadow: 0 15px 30px rgba(245, 158, 11, 0.8);
-    height: 100px; /* גובה גדול יותר לגמר */
+    height: 120px; /* גובה גדול יותר לגמר */
 }
 .match-card.final-match .player-slot {
     height: 50px;
@@ -319,6 +292,78 @@ button:hover {
 .animate-fade-in-out-delay {
   animation: fade-in-out 3s infinite ease-in-out 1s; /* מתחיל שנייה אחרי הפולס */
 }
+
+/* --- סגנונות קווי חיבור לטורניר --- */
+
+/* 1. דרישת בסיס: הוסף position: relative לאלמנטים הרלוונטיים */
+/* (ה-match-card כבר מוגדר כ-relative מ-createPlayerSlot) */
+.spacer-div {
+    position: relative;
+}
+
+/* 2. קו יוצא (אופקי) מכרטיס משחק */
+.connector-out-left::after,
+.connector-out-right::after {
+    content: '';
+    position: absolute;
+    top: 50%; /* מרכז הכרטיס */
+    height: 3px; /* עובי קו */
+    background-color: #475569; /* slate-600 - צבע קו עדין */
+    z-index: 1;
+    transform: translateY(-50%);
+}
+/* קו יוצא שמאלה (מהסוגר הימני) */
+.connector-out-left::after {
+    right: 100%;
+    width: 10px; /* חצי מהרווח בין הטורים (mx-2) */
+}
+/* קו יוצא ימינה (מהסוגר השמאלי) */
+.connector-out-right::after {
+    left: 100%;
+    width: 10px; /* חצי מהרווח בין הטורים (mx-2) */
+}
+
+/* 3. קו מחבר (אנכי + אופקי) מהרווח שבין המשחקים */
+.spacer-connector-left::before,
+.spacer-connector-right::before {
+    content: '';
+    position: absolute;
+    height: 3px; /* אותו עובי קו */
+    background-color: #475569; /* slate-600 */
+    z-index: 1;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px; /* חצי מהרווח בין הטורים */
+}
+/* קו נכנס שמאלה (לסוגר הימני) */
+.spacer-connector-left::before {
+    right: 0;
+}
+/* קו נכנס ימינה (לסוגר השמאלי) */
+.spacer-connector-right::before {
+    left: 0;
+}
+
+/* 4. הקו האנכי (מחובר לקו האופקי של הרווח) */
+.spacer-connector-left::after,
+.spacer-connector-right::after {
+    content: '';
+    position: absolute;
+    width: 3px; /* עובי הקו האנכי */
+    height: 100%; /* גובה הרווח המלא (136px) */
+    background-color: #475569; /* slate-600 */
+    z-index: 1;
+    top: -50%; /* מתחיל מהכרטיס שלמעלה */
+}
+/* קו אנכי לסוגר הימני (ממוקם ימינה) */
+.spacer-connector-left::after {
+    right: 10px; /* בדיוק בסוף הקו האופקי */
+}
+/* קו אנכי לסוגר השמאלי (ממוקם שמאלה) */
+.spacer-connector-right::after {
+    left: 10px; /* בדיוק בסוף הקו האופקי */
+}
+
 
 </style>
 </head>
@@ -676,15 +721,30 @@ function renderTournament(data) {
     teamsListElement.innerHTML = '';
     teamCountElement.textContent = teams.length;
     
-    teams.forEach((team, index) => {
-        const li = document.createElement('li');
-        li.className = 'flex justify-between items-center bg-slate-700 p-3 rounded-xl text-white font-medium shadow-md border border-cyan-500/30'; 
-        const displayName = `${team.nickname || 'אין כינוי'} <span class="text-amber-300 font-normal">(${team.name})</span>`;
-        li.innerHTML = `
-            <span class="text-xl">${index + 1}. ${displayName}</span>
-		<button **type="button"** class="text-red-400 hover:text-red-500 text-lg bg-transparent p-1 rounded-full hover:bg-red-900/50 transition font-bold" onclick="removeTeam('${team.id}')" ${status !== 'registration' ? 'disabled' : ''}>[X] הסר</button>        `;
-        teamsListElement.appendChild(li);
-    });
+	teams.forEach((team, index) => {
+        const li = document.createElement('li');
+        li.className = 'flex justify-between items-center bg-slate-700 p-3 rounded-xl text-white font-medium shadow-md border border-cyan-500/30'; 
+
+        // 1. יצירת ה-span של השם
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'text-xl';
+        // כאן אנו משתמשים ב-innerHTML בבטחה, כי התוכן מגיע מהכינויים שלנו ולא מקלט ישיר
+        nameSpan.innerHTML = `${index + 1}. ${team.nickname || 'אין כינוי'} <span class="text-amber-300 font-normal">(${team.name})</span>`;
+
+        // 2. יצירת כפתור המחיקה
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        // הוספנו קלאס 'remove-team-btn' לזיהוי
+        removeButton.className = 'remove-team-btn text-red-400 hover:text-red-500 text-lg bg-transparent p-1 rounded-full hover:bg-red-900/50 transition font-bold';
+        removeButton.textContent = '[X] הסר';
+        removeButton.dataset.id = team.id; // שימוש ב-dataset במקום onclick
+        removeButton.disabled = status !== 'registration';
+
+        // 3. הרכבת השורה
+        li.appendChild(nameSpan);
+        li.appendChild(removeButton);
+        teamsListElement.appendChild(li);
+    });
 
     if (teams.length === 0) {
         teamsListElement.innerHTML = `<li class="text-gray-400 text-center py-4 italic text-lg">🎲 נדרשים ${MAX_PLAYERS} שחקנים להתחלת הטורניר. הוסף שחקנים למעלה.</li>`;
@@ -820,12 +880,19 @@ function renderSplitBracket(matches, tournamentWinner, showChampionModal) {
         }
         
         // הוספת כותרת לכל טור
-		const titleSizeClass = col.isFinal ? 'text-5xl' : 'text-2xl';
-		
-        roundColumn.innerHTML = `
-            ${preTitle}
-            <h3 class="text-2xl font-black ${col.titleColor} mb-6 text-center">${col.title}</h3>
-        `;
+// הוספת כותרת לכל טור (באמצעות DOM API)
+        if (preTitle) {
+            // preTitle הוא עדיין מחרוזת HTML (בשביל האנימציה), אז ניצור אלמנט זמני
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = preTitle;
+            roundColumn.appendChild(tempDiv.firstElementChild);
+        }
+
+        const titleElement = document.createElement('h3');
+        const titleSizeClass = col.isFinal ? 'text-5xl' : 'text-2xl';
+        titleElement.className = `${titleSizeClass} font-black ${col.titleColor} mb-6 text-center`;
+        titleElement.textContent = col.title;
+        roundColumn.appendChild(titleElement);
         
         let spacerIndex = 0;
 
@@ -834,26 +901,44 @@ function renderSplitBracket(matches, tournamentWinner, showChampionModal) {
             if (!match) return;
             
             // הוספת רווח לפני המשחק
-            if (col.spacerHeights[spacerIndex] !== undefined) {
-                const spacerHeight = col.spacerHeights[spacerIndex];
-                const spacer = document.createElement('div');
-                spacer.style.height = `${spacerHeight}px`;
-                spacer.className = `w-full`;
-                roundColumn.appendChild(spacer);
-                spacerIndex++;
-            }
+			// הוספת רווח לפני המשחק
+            if (col.spacerHeights[spacerIndex] !== undefined) {
+                const spacerHeight = col.spacerHeights[spacerIndex];
+                const spacer = document.createElement('div');
+                spacer.style.height = `${spacerHeight}px`;
+                spacer.className = `w-full spacer-div`; // הוספנו 'spacer-div'
 
-            const matchContainer = document.createElement('div');
-            matchContainer.id = match.id;
-            
-            let matchClass = 'match-card mb-4 rounded-xl flex flex-col justify-center';
-            
-            // עיצוב מיוחד לגמר (הפיכה לגדול יותר)
-            if (matchId === 'r4m1') {
-                matchClass += ' final-match'; // שימוש בקלאס CSS שהוגדר למעלה
-            }
-            
-            matchContainer.className = matchClass;
+                // הוספת קלאס מחבר לרווחים שבין המשחקים
+                if (spacerIndex > 0 && !col.isFinal) {
+                    if (['R16_R', 'QF_R', 'SF_R'].includes(col.key)) {
+                        spacer.classList.add('spacer-connector-left');
+                    } else if (['R16_L', 'QF_L', 'SF_L'].includes(col.key)) {
+                        spacer.classList.add('spacer-connector-right');
+                    }
+                }
+                
+                roundColumn.appendChild(spacer);
+                spacerIndex++;
+            }
+
+			const matchContainer = document.createElement('div');
+            matchContainer.id = match.id;
+            
+            let matchClass = 'match-card mb-4 rounded-xl flex flex-col justify-center';
+            
+            // עיצוב מיוחד לגמר
+            if (matchId === 'r4m1') {
+                matchClass += ' final-match';
+            } else {
+                // הוספת קו יוצא לכל המשחקים שהם לא בגמר
+                if (['R16_R', 'QF_R', 'SF_R'].includes(col.key)) {
+                    matchClass += ' connector-out-left';
+                } else if (['R16_L', 'QF_L', 'SF_L'].includes(col.key)) {
+                    matchClass += ' connector-out-right';
+                }
+            }
+            
+            matchContainer.className = matchClass;
 
             const matchInfo = document.createElement('div');
             matchInfo.className = 'flex flex-col w-full';
@@ -980,61 +1065,89 @@ function renderPreliminaryView() {
 
 }
 
+/**
+ * יוצר אלמנט HTML עבור משבצת שחקן.
+ * --- גרסה 4.0 (DOM API Refactor) ---
+ * הפונקציה הזו יוצרת אלמנטים אמיתיים, ללא innerHTML וללא onclick.
+ */
+/**
+ * יוצר אלמנט HTML עבור משבצת שחקן.
+ * --- גרסה 4.1 (DOM API Refactor - תיקון "ממתין לזוכה") ---
+ */
 function createPlayerSlot(match, player, gameWins, isPlayer1) {
-    const slotEl = document.createElement('div');
-    slotEl.className = 'player-slot relative';
-    
-    let playerName = player?.name || (match.status === 'pending' ? 'ממתין למנצח' : '---');
-    let winsDisplay = gameWins > 0 ? `(${gameWins}/${WINS_TO_WIN_MATCH})` : ''; 
-    let icon = '🎲'; // אייקון קובייה לבאקגמון
+    const slotEl = document.createElement('div');
+    slotEl.className = 'player-slot relative'; 
+    
+    let winsDisplay = gameWins > 0 ? `(${gameWins}/${WINS_TO_WIN_MATCH})` : ''; 
+    let icon = '🎲'; 
 
-    // שילוב שם וכינוי להצגה
-    let displayNameHtml = playerName;
-    if (player && player.nickname) {
-        // לוודא שהצבעים משתלבים טוב עם רקע ה-winner/loser
-        const nicknameColor = match.winnerId ? 'text-gray-900/80' : 'text-slate-900/80';
-        displayNameHtml = `${player.nickname} <span class="text-sm font-normal ${nicknameColor}">(${player.name})</span>`;
-    }
+    // יצירת האלמנטים
+    const nameBlock = document.createElement('div');
+    nameBlock.className = 'h-full flex items-center gap-2'; // ממורכז אנכית
 
-    let isWinner = match.winnerId && player && match.winnerId === player.id;
-    let isLoser = match.winnerId && player && match.winnerId !== player.id;
-    let isEmpty = !player && match.status !== 'pending';
+    const scoreBlock = document.createElement('span');
+    scoreBlock.className = 'font-black text-sm h-full flex items-center'; // ממורכז אנכית
 
-    if (isEmpty) {
-        slotEl.classList.remove('player-slot-filled');
-        slotEl.classList.add('player-slot-empty');
-        icon = '...';
-        displayNameHtml = playerName; // לא להציג כינוי אם ריק
-    } else if (isWinner) {
-        slotEl.classList.add('player-slot-winner');
-//        winsDisplay = `(המנצח!)`; 
-        icon = '👑';
-    } else if (isLoser) {
-        slotEl.classList.add('player-slot-loser');
-        icon = '❌';
-    } else if (player) {
-        slotEl.classList.add('player-slot-filled');
-    }
-    
-    // התוכן של הסלוט
-    slotEl.innerHTML = `
-        <span class="text-base font-bold flex items-center gap-2">
-            ${icon} ${displayNameHtml}
-        </span>
-        <span class="font-black text-sm">${winsDisplay}</span>
-    `;
+    if (player) {
+        // --- יש שחקן ---
+        let isWinner = match.winnerId && player.id === match.winnerId;
+        let isLoser = match.winnerId && player.id !== match.winnerId;
+        let nicknameColor = 'text-slate-900/70'; 
 
-    // הוספת יכולת לחיצה רק אם המשחק מוכן וטרם הסתיים
-    if (!match.winnerId && match.player1 && match.player2) {
-        slotEl.onclick = () => window.openModal(match.id);
-        slotEl.classList.add('cursor-pointer', 'transition');
-    }
-    
-    return slotEl;
+        if (isWinner) {
+            slotEl.classList.add('player-slot-winner');
+            winsDisplay = `(המנצח!)`; 
+            icon = '👑';
+            nicknameColor = 'text-gray-900/80';
+        } else if (isLoser) {
+            slotEl.classList.add('player-slot-loser');
+            icon = '❌';
+            nicknameColor = 'text-slate-300';
+        } else {
+            slotEl.classList.add('player-slot-filled');
+        }
+
+        // בניית בלוק השם (כינוי + שם)
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'text-lg';
+        iconSpan.textContent = icon;
+
+        const textDiv = document.createElement('div');
+        textDiv.className = 'flex flex-col';
+        textDiv.style.lineHeight = '1.2';
+
+        const nicknameSpan = document.createElement('span');
+        nicknameSpan.className = 'text-base font-bold';
+        nicknameSpan.textContent = player.nickname;
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = `text-xs ${nicknameColor} font-normal`;
+        nameSpan.textContent = `(${player.name})`;
+
+        textDiv.append(nicknameSpan, nameSpan);
+        nameBlock.append(iconSpan, textDiv);
+        scoreBlock.textContent = winsDisplay;
+    } else {
+        // --- אין שחקן (משבצת ריקה או ממתינה) ---
+        // *** התיקון כאן ***
+        let playerName = (match.status === 'pending' ? 'ממתין למזליסט' : '---');
+        icon = '...';
+        slotEl.classList.add('player-slot-empty');
+        nameBlock.innerHTML = `${icon} ${playerName}`;
+        scoreBlock.textContent = '';
+    }
+    
+    // הרכבה סופית של המשבצת
+    slotEl.append(nameBlock, scoreBlock);
+    
+    // הוספת data-id במקום onclick
+    if (!match.winnerId && match.player1 && match.player2) {
+        slotEl.classList.add('cursor-pointer', 'transition');
+        slotEl.dataset.matchId = match.id; // הוספת מזהה ללחיצה
+    }
+    
+    return slotEl;
 }
-
-
-// --- Tournament Logic ---
 
 window.removeTeam = (playerIdToRemove) => {
     if (tournamentData.status !== 'registration') return;
@@ -1467,6 +1580,29 @@ function advanceWinner(currentMatch, winnerPlayer) {
 
 // קריאה לפונקציית יצירת המבנה בלחיצה על 'התחל'
 document.getElementById('start-tournament').addEventListener('click', startTournamentRouter);
+
+// זה מחליף את כל פקודות ה-onclick
+teamsListElement.addEventListener('click', (e) => {
+    // בדוק אם האלמנט שנלחץ הוא כפתור מחיקה
+    if (e.target.classList.contains('remove-team-btn')) {
+        const teamId = e.target.dataset.id;
+        if (teamId) {
+            window.removeTeam(teamId); // קורא לפונקציה הקיימת
+        }
+    }
+});
+
+// מאזין אירועים *אחד* לכל לוח הטורניר (מחליף את ה-onclick במשבצות)
+bracketElement.addEventListener('click', (e) => {
+    // מצא את המשבצת הקרובה ביותר שנלחצה
+    const playerSlot = e.target.closest('.player-slot');
+    
+    // בדוק אם למשבצת יש מזהה משחק (data-match-id)
+    if (playerSlot && playerSlot.dataset.matchId) {
+        const matchId = playerSlot.dataset.matchId;
+        window.openModal(matchId); // קורא לפונקציה הקיימת
+    }
+});
 
 // אתחול האפליקציה בטעינת הדף
 initializeApp();
