@@ -1402,7 +1402,7 @@ document.getElementById('add-team-form').addEventListener('submit', (e) => {
     }
 
     const newPlayer = { id: generateId(), name: playerName, nickname: nickname };
-    tournamentData.teams.push(newPlayer);
+    tournamentData.teams.unshift(newPlayer);
     teamNameInput.value = '';
     teamNameInput.focus();
     showRegistrationAlert(`השחקן ${playerName} (הכינוי: ${nickname}) נוסף בהצלחה!`);
