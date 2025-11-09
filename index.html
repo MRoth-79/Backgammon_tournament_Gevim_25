@@ -493,7 +493,7 @@ button:hover {
 
 <!-- מודאל לעדכון תוצאות - הטוב מ-5 -->
 <div id="result-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50 p-4">
-        <div class="bg-slate-800 p-5 rounded-xl w-full max-w-[65vh] shadow-2xl border-4 border-amber-500 animate-in zoom-in duration-300 max-h-[105vh] overflow-y-auto">
+        <div class="bg-slate-800 p-5 rounded-xl w-full max-w-2xl shadow-2xl border-4 border-amber-500 animate-in zoom-in duration-300 max-h-[105vh] overflow-y-auto">
         <h3 id="modal-title" class="text-3xl font-black text-amber-400 mb-4 text-center border-b border-amber-400/30 pb-3">עדכון תוצאת משחק</h3>
         
         <div id="modal-score-display" class="text-4xl text-center mb-4 font-extrabold text-cyan-300 bg-slate-700 p-3 rounded-xl border border-cyan-400 shadow-lg"></div>
@@ -1024,9 +1024,15 @@ function getPlayerStats(playerId) {
     const stats = { wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0, pointDifferential: 0 };
     
     // אסוף את כל המשחקים מכל הסיבובים למערך אחד
-    const allMatches = Object.values(tournamentData.matches).flat();
+	const mainBracketMatches = [
+		...tournamentData.matches.roundOf16,
+		...tournamentData.matches.quarterfinals,
+		...tournamentData.matches.semifinals,
+		...tournamentData.matches.final
+	];
 
-    allMatches.forEach(match => {
+	mainBracketMatches.forEach(match => {
+	
         if (!match.player1 || !match.player2) return; // דלג על משחקים שטרם אוכלסו
 
         let isPlayerInMatch = false;
