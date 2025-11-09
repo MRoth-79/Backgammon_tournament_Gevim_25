@@ -460,6 +460,37 @@ button:hover {
     </div>
 </div>
 
+<div id="ranking-section" class="bg-slate-800 p-8 rounded-3xl mb-8 shadow-2xl border border-purple-500/50 max-w-4xl mx-auto hidden">
+    <h2 class="text-3xl font-bold text-purple-300 mb-5 border-b border-purple-300/30 pb-3 flex items-center gap-3">
+        <span class="text-4xl">🏅</span>
+        טבלת הדירוג הסופי
+    </h2>
+    <div id="ranking-list" class="space-y-4">
+        </div>
+</div>
+
+<div id="live-ranking-section" class="bg-slate-800 p-8 rounded-3xl mb-8 shadow-2xl border border-blue-500/50 max-w-4xl mx-auto hidden">
+    <h2 class="text-3xl font-bold text-blue-300 mb-5 border-b border-blue-300/30 pb-3 flex items-center gap-3">
+        <span class="text-4xl">📊</span>
+        דירוג חי (16 הגדולים)
+    </h2>
+    <table id="live-ranking-table" class="w-full text-right">
+        <thead>
+            <tr class="border-b border-slate-600">
+                <th class="p-2">מקום</th>
+                <th class="p-2">כינוי (שם)</th>
+                <th class="p-2 text-center">נצ'</th>
+                <th class="p-2 text-center">הפס'</th>
+                <th class="p-2 text-center">נק' זכות</th>
+                <th class="p-2 text-center">נק' חובה</th>
+                <th class="p-2 text-center">הפרש</th>
+            </tr>
+        </thead>
+        <tbody id="live-ranking-body">
+            </tbody>
+    </table>
+</div>
+
 <!-- מודאל לעדכון תוצאות - הטוב מ-5 -->
 <div id="result-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-slate-800 p-5 rounded-xl w-full max-w-[65vh] shadow-2xl border-4 border-amber-500 animate-in zoom-in duration-300 max-h-[105vh] overflow-y-auto">
@@ -593,6 +624,8 @@ const initialTournamentData = {
         final: [] // גמר - 1 משחק
     },
     playersWithBye: [],     // <-- נוסף: שחקנים שעלו אוטומטית
+	mainBracketPlayers: [], // שחקני הטורניר הראשי (16)
+    eliminatedPlayers: [], // שחקנים שהודחו
 	winner: null,
     showChampionModal: false 
 };
@@ -787,6 +820,8 @@ function renderTournament(data) {
     
     // 3. הצגת טבלת הנוקאאוט
     renderSplitBracket(data.matches, winner, showChampionModal);
+	renderRankingTable();
+    renderLiveRanking();
 }
 
 // פונקציה מעודכנת להצגת מבנה הטורניר המפוצל ל-16 שחקנים עם יישור משופר
@@ -980,6 +1015,188 @@ function renderSplitBracket(matches, tournamentWinner, showChampionModal) {
         bracketElement.appendChild(roundColumn);
     });
 }
+
+
+/**
+ * מחשב סטטיסטיקות עבור שחקן ספציפי (נצ', הפ', נק')
+ */
+function getPlayerStats(playerId) {
+    const stats = { wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0, pointDifferential: 0 };
+    
+    // אסוף את כל המשחקים מכל הסיבובים למערך אחד
+    const allMatches = Object.values(tournamentData.matches).flat();
+
+    allMatches.forEach(match => {
+        if (!match.player1 || !match.player2) return; // דלג על משחקים שטרם אוכלסו
+
+        let isPlayerInMatch = false;
+        let playerKey, opponentKey, playerPoints, opponentPoints;
+
+        if (match.player1.id === playerId) {
+            isPlayerInMatch = true;
+            playerKey = 'player1';
+            opponentKey = 'player2';
+            playerPoints = match.gameWins1;
+            opponentPoints = match.gameWins2;
+        } else if (match.player2.id === playerId) {
+            isPlayerInMatch = true;
+            playerKey = 'player2';
+            opponentKey = 'player1';
+            playerPoints = match.gameWins2;
+            opponentPoints = match.gameWins1;
+        }
+
+        if (isPlayerInMatch) {
+            // צבור נקודות זכות/חובה רק אם המשחק התחיל (יש נקודות)
+            if (playerPoints > 0 || opponentPoints > 0) {
+                 stats.pointsFor += playerPoints;
+                 stats.pointsAgainst += opponentPoints;
+            }
+
+            // צבור ניצחונות/הפסדים רק אם המשחק הסתיים
+            if (match.winnerId) {
+                if (match.winnerId === playerId) {
+                    stats.wins++;
+                } else {
+                    stats.losses++;
+                }
+            }
+        }
+    });
+
+    stats.pointDifferential = stats.pointsFor - stats.pointsAgainst;
+    return stats;
+}
+
+/**
+ * יוצר ומציג את טבלת הדירוג החי (עם הפרשי נקודות)
+ */
+function renderLiveRanking() {
+    const liveSection = document.getElementById('live-ranking-section');
+    const tableBody = document.getElementById('live-ranking-body');
+
+    // אל תציג אם הטורניר לא התחיל או אם אין שחקנים בטורניר הראשי
+    if ((tournamentData.status !== 'in_progress' && tournamentData.status !== 'finished') || !tournamentData.mainBracketPlayers || tournamentData.mainBracketPlayers.length === 0) {
+        liveSection.classList.add('hidden');
+        return;
+    }
+
+    liveSection.classList.remove('hidden');
+    tableBody.innerHTML = ''; 
+
+    // 1. קבל נתונים
+    const rankedPlayers = tournamentData.mainBracketPlayers.map(player => {
+        const stats = getPlayerStats(player.id);
+        return {
+            player,
+            ...stats
+        };
+    });
+
+    // 2. מיין את הרשימה
+    rankedPlayers.sort((a, b) => {
+        if (a.wins !== b.wins) return b.wins - a.wins; // 1. קודם כל נצחונות
+        if (a.pointDifferential !== b.pointDifferential) return b.pointDifferential - a.pointDifferential; // 2. הפרש נקודות
+        if (a.pointsFor !== b.pointsFor) return b.pointsFor - a.pointsFor; // 3. נקודות זכות
+        return a.player.nickname.localeCompare(b.player.nickname); // 4. א'-ב'
+    });
+
+    // 3. בנה את שורות הטבלה
+    let currentRank = 1;
+    for (let i = 0; i < rankedPlayers.length; i++) {
+        const p = rankedPlayers[i];
+        
+        // לוגיקה לדירוג משותף
+        if (i > 0 && (
+            rankedPlayers[i].wins !== rankedPlayers[i-1].wins || 
+            rankedPlayers[i].pointDifferential !== rankedPlayers[i-1].pointDifferential ||
+            rankedPlayers[i].pointsFor !== rankedPlayers[i-1].pointsFor
+        )) {
+            currentRank = i + 1;
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-700/50 hover:bg-slate-700';
+        tr.innerHTML = `
+            <td class="p-3 font-bold">${currentRank}.</td>
+            <td class="p-3">
+                <span class="font-semibold">${p.player.nickname}</span>
+                <span class="text-sm text-slate-400"> (${p.player.name})</span>
+            </td>
+            <td class="p-3 text-center text-green-400 font-bold">${p.wins}</td>
+            <td class="p-3 text-center text-red-400 font-bold">${p.losses}</td>
+            <td class="p-3 text-center text-cyan-400">${p.pointsFor}</td>
+            <td class="p-3 text-center text-orange-400">${p.pointsAgainst}</td>
+            <td class="p-3 text-center text-white font-bold">${p.pointDifferential > 0 ? '+' : ''}${p.pointDifferential}</td>
+        `;
+        tableBody.appendChild(tr);
+    }
+}
+
+/**
+ * יוצר ומציג את טבלת הדירוג הסופי (לפי שלב הדחה)
+ */
+function renderRankingTable() {
+    const rankingSection = document.getElementById('ranking-section');
+    const rankingList = document.getElementById('ranking-list');
+    
+    // אל תציג כלום אם הטורניר ברישום, או אם אין מודחים ואין מנצח
+    if (tournamentData.status === 'registration' || (tournamentData.eliminatedPlayers.length === 0 && !tournamentData.winner)) {
+        rankingSection.classList.add('hidden');
+        return;
+    }
+
+    rankingSection.classList.remove('hidden');
+    rankingList.innerHTML = ''; // נקה רשימה קודמת
+
+    // סדר הדירוג מהגבוה לנמוך
+    const rankOrder = [
+        { key: 'winner', title: '🏆 מקום ראשון' },
+        { key: 'final', title: '🥈 מקום שני' },
+        { key: 'semifinals', title: '🥉 מקום 3-4' },
+        { key: 'quarterfinals', title: 'מקום 5-8' },
+        { key: 'roundOf16', title: 'מקום 9-16' },
+        { key: 'preliminaryRound', title: 'הודחו במוקדמות' }
+    ];
+
+    rankOrder.forEach(rank => {
+        let playersInRank = []; // אתחול מערך ריק
+
+        // לוגיקה חדשה לקביעת השחקנים
+        if (rank.key === 'winner' && tournamentData.winner) {
+            // טיפול מיוחד במנצח הטורניר
+            playersInRank.push({ player: tournamentData.winner });
+        } else {
+            // לוגיקה רגילה לשאר המודחים
+            playersInRank = tournamentData.eliminatedPlayers.filter(p => p.lostInRound === rank.key);
+        }
+        
+        // רק אם יש שחקנים בדירוג הזה, צור את הקטגוריה
+        if (playersInRank.length > 0) {
+            const rankGroup = document.createElement('div');
+            rankGroup.className = 'mb-4';
+            
+            const title = document.createElement('h4');
+            title.className = 'text-xl font-semibold text-amber-300 mb-2 border-b border-amber-300/20 pb-1';
+            title.textContent = rank.title;
+            rankGroup.appendChild(title);
+            
+            const playerList = document.createElement('div');
+            playerList.className = 'flex flex-wrap gap-2';
+            
+            playersInRank.forEach(p => {
+                const playerTag = document.createElement('span');
+                playerTag.className = 'bg-slate-700 text-slate-200 px-3 py-1 rounded-full text-sm';
+                playerTag.textContent = `${p.player.nickname} (${p.player.name})`;
+                playerList.appendChild(playerTag);
+            });
+            
+            rankGroup.appendChild(playerList);
+            rankingList.appendChild(rankGroup);
+        }
+    });
+}
+
 
 /**
  * פונקציה חדשה: מרנדרת את התצוגה של סיבוב המוקדמות.
@@ -1195,7 +1412,7 @@ teamNameInput.addEventListener('input', () => {
 
 // *** שים לב לשינוי השם ול- (players) ***
 function generateMainBracket(players) { 
-    // מחקנו את: const players = shuffle([...tournamentData.teams]);
+    tournamentData.mainBracketPlayers = [...players];
     const matches = {
         // ודא שאתה מאפס את כל המערך לפני בניית הטורניר הראשי
         preliminaryRound: tournamentData.matches.preliminaryRound, // שמור את תוצאות המוקדמות
@@ -1402,7 +1619,7 @@ function updateModalScoreDisplay(match) {
 
 // פתיחת חלון קופץ לעדכון תוצאות - *** גרסה משודרגת ***
 window.openModal = (matchId) => {
-    const { match } = findMatch(matchId);
+    const { match, roundKey } = findMatch(matchId);
 
     if (!match || match.winnerId || !match.player1 || !match.player2) return;
 
@@ -1472,45 +1689,58 @@ window.showScoreStep = (winnerPlayerNumber) => {
 // טיפול בניצחון משחק בודד (העלאת ניקוד)
 // טיפול בניצחון משחק בודד (העלאת ניקוד) - *** גרסה מתוקנת ***
 // טיפול בניצחון משחק בודד (העלאת ניקוד) - *** גרסה מתוקנת ***
+// טיפול בניצחון משחק בודד (העלאת ניקוד) - *** גרסה מתוקנת ***
 window.handleGameWin = (matchId, winnerPlayerNumber, pointsToAdd) => {
-    const { match } = findMatch(matchId);
-    // אם אין משחק או שכבר נגמר, עצור
-    if (!match || match.winnerId) return; 
+    // ⬇️ תיקון 1: קבל גם את roundKey
+    const { match, roundKey } = findMatch(matchId); 
+    // אם אין משחק או שכבר נגמר, עצור
+    if (!match || match.winnerId) return; 
 
-    const scoreToUpdate = winnerPlayerNumber === 1 ? 'gameWins1' : 'gameWins2';
-    
-    // 1. הוסף את הנקודות שהתקבלו (1, 2, או 3)
-    match[scoreToUpdate] += pointsToAdd;
+    const scoreToUpdate = winnerPlayerNumber === 1 ? 'gameWins1' : 'gameWins2';
+    
+    // 1. הוסף את הנקודות שהתקבלו (1, 2, או 3)
+    match[scoreToUpdate] += pointsToAdd;
 
-    // 2. בדיקה האם המפגש הסתיים (גדול או שווה למטרה)
-    if (match.gameWins1 >= WINS_TO_WIN_MATCH || match.gameWins2 >= WINS_TO_WIN_MATCH) {
-        
-        // 3. (תיקון הבאג) "נעל" את הניקוד על המטרה, למנוע 5-2
-        if (match.gameWins1 >= WINS_TO_WIN_MATCH) {
-            match.gameWins1 = WINS_TO_WIN_MATCH;
-            // ודא שהניקוד השני לא עבר גם הוא בטעות
-            if (match.gameWins2 >= WINS_TO_WIN_MATCH) match.gameWins2 = WINS_TO_WIN_MATCH - 1; 
-        } else if (match.gameWins2 >= WINS_TO_WIN_MATCH) {
-            match.gameWins2 = WINS_TO_WIN_MATCH;
-            if (match.gameWins1 >= WINS_TO_WIN_MATCH) match.gameWins1 = WINS_TO_WIN_MATCH - 1;
-        }
+    // 2. בדיקה האם המפגש הסתיים (גדול או שווה למטרה)
+    if (match.gameWins1 >= WINS_TO_WIN_MATCH || match.gameWins2 >= WINS_TO_WIN_MATCH) {
+        
+        // 3. (תיקון הבאג) "נעל" את הניקוד על המטרה, למנוע 5-2
+        if (match.gameWins1 >= WINS_TO_WIN_MATCH) {
+            match.gameWins1 = WINS_TO_WIN_MATCH;
+            // ודא שהניקוד השני לא עבר גם הוא בטעות
+            if (match.gameWins2 >= WINS_TO_WIN_MATCH) match.gameWins2 = WINS_TO_WIN_MATCH - 1; 
+        } else if (match.gameWins2 >= WINS_TO_WIN_MATCH) {
+            match.gameWins2 = WINS_TO_WIN_MATCH;
+            if (match.gameWins1 >= WINS_TO_WIN_MATCH) match.gameWins1 = WINS_TO_WIN_MATCH - 1;
+        }
 
-        // 4. קבע את המנצח
-        match.winnerId = match.gameWins1 === WINS_TO_WIN_MATCH ? match.player1.id : match.player2.id;
-        const winnerPlayer = match.winnerId === match.player1.id ? match.player1 : match.player2;
+        // 4. קבע את המנצח
+        // ⬇️ ⬇️ ⬇️ כאן התיקון המרכזי (הפרדת שורות) ⬇️ ⬇️ ⬇️
+        match.winnerId = match.gameWins1 === WINS_TO_WIN_MATCH ? match.player1.id : match.player2.id;
+        const winnerPlayer = match.winnerId === match.player1.id ? match.player1 : match.player2;
+        // ⬆️ ⬆️ ⬆️ סוף התיקון ⬆️ ⬆️ ⬆️
 
-        
-        advanceWinner(match, winnerPlayer); // <--- זה החלק שמעלה לרבע גמר
-		window.closeModal(); // סגור את המודאל (זה גם שומר את המצב)
+        // --- הוספת המפסיד לרשימת המודחים ---
+        const loserPlayer = match.winnerId === match.player1.id ? match.player2 : match.player1;
+        if (loserPlayer && roundKey) { // ודא שיש מפסיד ושאנחנו יודעים באיזה סיבוב
+            // בדוק שהוא לא כבר ברשימה (למקרה של ביטול נקודה והוספה מחדש)
+            if (!tournamentData.eliminatedPlayers.some(p => p.player.id === loserPlayer.id)) {
+                tournamentData.eliminatedPlayers.push({
+                    player: loserPlayer,
+                    lostInRound: roundKey // 'preliminaryRound', 'roundOf16', 'final' וכו'.
+                });
+            }
+        }
+        // --- סוף הלוגיקה החדשה ---
+        
+        advanceWinner(match, winnerPlayer); // <--- זה החלק שמעלה לרבע גמר
+        window.closeModal(); // סגור את המודאל (זה גם שומר את המצב)
 
-    } else {
-        // 5. אם המשחק לא נגמר, פשוט סגור את המודאל
-        //    (הניקוד יישמר אוטומטית על ידי closeModal)
-        window.closeModal();
-    }
-    
-    // הערה: אנחנו לא צריכים 'saveTournamentState()' כאן
-    // כי 'window.closeModal()' כבר קורא לזה, וזה מונע כפילות.
+    } else {
+        // 5. אם המשחק לא נגמר, פשוט סגור את המודאל
+        //    (הניקוד יישמר אוטומטית על ידי closeModal)
+        window.closeModal();
+    }
 };
 
 // טיפול בביטול/הפחתת נקודה
