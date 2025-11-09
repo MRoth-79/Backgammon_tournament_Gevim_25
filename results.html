@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>תוצאות טורניר שש-בש גבים</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* סגנונות בסיסיים - מועתקים מהקובץ הראשי */
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #0F172A;
+            color: #f3f4f6;
+            padding: 1rem;
+        }
+        .header-glow-text {
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.6), 0 0 25px #f59e0b, 0 0 40px rgba(245, 158, 11, 0.4);
+        }
+    </style>
+</head>
+<body class="rtl text-right">
+
+    <div class="text-center py-8 mb-10 shadow-2xl rounded-b-[40px] border-b-8 border-double border-yellow-500" style="background: linear-gradient(180deg, #1e293b, #0F172A);">
+        <h1 class="text-5xl md:text-6xl font-extrabold text-amber-400 tracking-wider header-glow-text">
+            🏆 תוצאות לייב - טורניר שש-בש 🎲
+        </h1>
+        <p id="loading-status" class="text-2xl text-cyan-300 mt-4">טוען נתונים...</p>
+    </div>
+
+    <div id="ranking-section" class="bg-slate-800 p-8 rounded-3xl mb-8 shadow-2xl border border-purple-500/50 max-w-4xl mx-auto hidden">
+        <h2 class="text-3xl font-bold text-purple-300 mb-5 border-b border-purple-300/30 pb-3 flex items-center gap-3">
+            <span class="text-4xl">🏅</span>
+            טבלת הדירוג הסופי
+        </h2>
+        <div id="ranking-list" class="space-y-4">
+            </div>
+    </div>
+
+    <div id="live-ranking-section" class="bg-slate-800 p-8 rounded-3xl mb-8 shadow-2xl border border-blue-500/50 max-w-4xl mx-auto hidden">
+        <h2 class="text-3xl font-bold text-blue-300 mb-5 border-b border-blue-300/30 pb-3 flex items-center gap-3">
+            <span class="text-4xl">📊</span>
+            דירוג חי (16 הגדולים)
+        </h2>
+        <table id="live-ranking-table" class="w-full text-right">
+            <thead>
+                <tr class="border-b border-slate-600">
+                    <th class="p-2">מקום</th>
+                    <th class="p-2">כינוי (שם)</th>
+                    <th class="p-2 text-center">נצ'</th>
+                    <th class="p-2 text-center">הפס'</th>
+                    <th class="p-2 text-center">נק' זכות</th>
+                    <th class="p-2 text-center">נק' חובה</th>
+                    <th class="p-2 text-center">הפרש</th>
+                </tr>
+            </thead>
+            <tbody id="live-ranking-body">
+                </tbody>
+        </table>
+    </div>
+
+    <script type="module">
+        // 1. ייבוא ספרייה לדחיסת נתונים
+        import lz from 'https://cdn.jsdelivr.net/npm/lz-string@1.5.0/+esm';
+
+        // 2. הגדרת משתנה גלובלי עבור נתוני הטורניר
+        let tournamentData = {};
+
+        // 3. העתקת הפונקציות לחישוב וציור הטבלאות
+        // (אלו אותן פונקציות שקיימות אצלך בקובץ הראשי)
+
+        /**
+         * מחשב סטטיסטיקות עבור שחקן ספציפי (נצ', הפ', נק')
+         */
+        function getPlayerStats(playerId) {
+            const stats = { wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0, pointDifferential: 0 };
+            
+            // אסוף את כל המשחקים מכל הסיבובים למערך אחד
+            const allMatches = Object.values(tournamentData.matches).flat();
+
+            allMatches.forEach(match => {
+                if (!match.player1 || !match.player2) return; // דלג על משחקים שטרם אוכלסו
+
+                let isPlayerInMatch = false;
+                let playerKey, opponentKey, playerPoints, opponentPoints;
+
+                if (match.player1.id === playerId) {
+                    isPlayerInMatch = true;
+                    playerKey = 'player1';
+                    opponentKey = 'player2';
+                    playerPoints = match.gameWins1;
+                    opponentPoints = match.gameWins2;
+                } else if (match.player2.id === playerId) {
+                    isPlayerInMatch = true;
+                    playerKey = 'player2';
+                    opponentKey = 'player1';
+                    playerPoints = match.gameWins2;
+                    opponentPoints = match.gameWins1;
+                }
+
+                if (isPlayerInMatch) {
+                    if (playerPoints > 0 || opponentPoints > 0) {
+                        stats.pointsFor += playerPoints;
+                        stats.pointsAgainst += opponentPoints;
+                    }
+                    if (match.winnerId) {
+                        if (match.winnerId === playerId) {
+                            stats.wins++;
+                        } else {
+                            stats.losses++;
+                        }
+                    }
+                }
+            });
+
+            stats.pointDifferential = stats.pointsFor - stats.pointsAgainst;
+            return stats;
+        }
+
+        /**
+         * יוצר ומציג את טבלת הדירוג החי (עם הפרשי נקודות)
+         */
+        function renderLiveRanking() {
+            const liveSection = document.getElementById('live-ranking-section');
+            const tableBody = document.getElementById('live-ranking-body');
+
+            if ((tournamentData.status !== 'in_progress' && tournamentData.status !== 'finished') || !tournamentData.mainBracketPlayers || tournamentData.mainBracketPlayers.length === 0) {
+                liveSection.classList.add('hidden');
+                return;
+            }
+
+            liveSection.classList.remove('hidden');
+            tableBody.innerHTML = ''; 
+
+            const rankedPlayers = tournamentData.mainBracketPlayers.map(player => {
+                const stats = getPlayerStats(player.id);
+                return { player, ...stats };
+            });
+
+            rankedPlayers.sort((a, b) => {
+                if (a.wins !== b.wins) return b.wins - a.wins;
+                if (a.pointDifferential !== b.pointDifferential) return b.pointDifferential - a.pointDifferential;
+                if (a.pointsFor !== b.pointsFor) return b.pointsFor - a.pointsFor;
+                return a.player.nickname.localeCompare(b.player.nickname);
+            });
+
+            let currentRank = 1;
+            for (let i = 0; i < rankedPlayers.length; i++) {
+                const p = rankedPlayers[i];
+                
+                if (i > 0 && (
+                    rankedPlayers[i].wins !== rankedPlayers[i-1].wins || 
+                    rankedPlayers[i].pointDifferential !== rankedPlayers[i-1].pointDifferential ||
+                    rankedPlayers[i].pointsFor !== rankedPlayers[i-1].pointsFor
+                )) {
+                    currentRank = i + 1;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-700/50 hover:bg-slate-700';
+                tr.innerHTML = `
+                    <td class="p-3 font-bold">${currentRank}.</td>
+                    <td class="p-3">
+                        <span class="font-semibold">${p.player.nickname}</span>
+                        <span class="text-sm text-slate-400"> (${p.player.name})</span>
+                    </td>
+                    <td class="p-3 text-center text-green-400 font-bold">${p.wins}</td>
+                    <td class="p-3 text-center text-red-400 font-bold">${p.losses}</td>
+                    <td class="p-3 text-center text-cyan-400">${p.pointsFor}</td>
+                    <td class="p-3 text-center text-orange-400">${p.pointsAgainst}</td>
+                    <td class="p-3 text-center text-white font-bold">${p.pointDifferential > 0 ? '+' : ''}${p.pointDifferential}</td>
+                `;
+                tableBody.appendChild(tr);
+            }
+        }
+
+        /**
+         * יוצר ומציג את טבלת הדירוג הסופי (לפי שלב הדחה)
+         */
+        function renderRankingTable() {
+            const rankingSection = document.getElementById('ranking-section');
+            const rankingList = document.getElementById('ranking-list');
+            
+            if (tournamentData.status === 'registration' || (tournamentData.eliminatedPlayers.length === 0 && !tournamentData.winner)) {
+                rankingSection.classList.add('hidden');
+                return;
+            }
+
+            rankingSection.classList.remove('hidden');
+            rankingList.innerHTML = ''; 
+
+            const rankOrder = [
+                { key: 'winner', title: '🏆 מקום ראשון' },
+                { key: 'final', title: '🥈 מקום שני' },
+                { key: 'semifinals', title: '🥉 מקום 3-4' },
+                { key: 'quarterfinals', title: 'מקום 5-8' },
+                { key: 'roundOf16', title: 'מקום 9-16' },
+                { key: 'preliminaryRound', title: 'הודחו במוקדמות' }
+            ];
+
+            rankOrder.forEach(rank => {
+                let playersInRank = []; 
+
+                if (rank.key === 'winner' && tournamentData.winner) {
+                    playersInRank.push({ player: tournamentData.winner });
+                } else {
+                    playersInRank = tournamentData.eliminatedPlayers.filter(p => p.lostInRound === rank.key);
+                }
+                
+                if (playersInRank.length > 0) {
+                    const rankGroup = document.createElement('div');
+                    rankGroup.className = 'mb-4';
+                    
+                    const title = document.createElement('h4');
+                    title.className = 'text-xl font-semibold text-amber-300 mb-2 border-b border-amber-300/20 pb-1';
+                    title.textContent = rank.title;
+                    rankGroup.appendChild(title);
+                    
+                    const playerList = document.createElement('div');
+                    playerList.className = 'flex flex-wrap gap-2';
+                    
+                    playersInRank.forEach(p => {
+                        const playerTag = document.createElement('span');
+                        playerTag.className = 'bg-slate-700 text-slate-200 px-3 py-1 rounded-full text-sm';
+                        playerTag.textContent = `${p.player.nickname} (${p.player.name})`;
+                        playerList.appendChild(playerTag);
+                    });
+                    
+                    rankGroup.appendChild(playerList);
+                    rankingList.appendChild(rankGroup);
+                }
+            });
+        }
+
+
+        // 4. הקוד הראשי שרץ בטעינת הדף
+        document.addEventListener('DOMContentLoaded', () => {
+            const statusElement = document.getElementById('loading-status');
+            try {
+                // קח את הלינק הנוכחי
+                const urlParams = new URLSearchParams(window.location.search);
+                
+                // חלץ את הנתונים מהלינק
+                const compressedData = urlParams.get('data');
+
+                if (!compressedData) {
+                    statusElement.textContent = 'שגיאה: לינק שיתוף לא תקין או שחסרים נתונים.';
+                    statusElement.className = 'text-2xl text-red-400 mt-4';
+                    return;
+                }
+
+                // פתח את הדחיסה
+                const jsonData = lz.decompressFromBase64(compressedData);
+                // המר את הטקסט בחזרה לאובייקט
+                const data = JSON.parse(jsonData);
+
+                // טען את הנתונים למשתנה הגלובלי
+                tournamentData = data;
+
+                // עדכן את כותרת העמוד
+                document.title = `תוצאות: ${data.teams.length} שחקנים`;
+                statusElement.textContent = `מציג תוצאות עבור ${data.teams.length} שחקנים. הטורניר במצב: ${data.status}`;
+                statusElement.className = 'text-2xl text-lime-400 mt-4';
+
+                // קרא לפונקציות הציור כדי להציג את הטבלאות
+                renderLiveRanking();
+                renderRankingTable();
+
+            } catch (error) {
+                console.error('שגיאה בפענוח נתוני הטורניר:', error);
+                statusElement.textContent = 'שגיאה קריטית בפענוח הנתונים. הלינק כנראה שבור.';
+                statusElement.className = 'text-2xl text-red-400 mt-4';
+            }
+        });
+
+    </script>
+</body>
+</html>
